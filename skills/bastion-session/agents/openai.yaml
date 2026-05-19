@@ -1,0 +1,3 @@
+display_name: Bastion Session
+short_description: Ensure SSH access to OCI compute hosts through OCI Bastion sessions.
+default_prompt: Ensure a tracked OCI compute host is reachable through Bastion.

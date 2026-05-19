@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "oci-bassh command result",
+  "type": "object",
+  "required": ["command", "ok", "exit_code", "stdout", "stderr"],
+  "properties": {
+    "command": {"type": "array", "items": {"type": "string"}},
+    "ok": {"type": "boolean"},
+    "exit_code": {"type": "integer"},
+    "stdout": {"type": "string"},
+    "stderr": {"type": "string"},
+    "json": {}
+  }
+}

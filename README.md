@@ -8,31 +8,31 @@ The plugin packages two skills:
 - `oci-context`: agent-safe OCI context and auth inspection.
 - `bastion-session`: tracking, ensuring, and diagnosing Bastion-backed SSH hosts.
 
-The helper script gives agents one JSON-producing surface for common flows:
+The Go CLI gives agents one JSON-producing surface for common flows:
 
 ```bash
-python3 scripts/oci_bassh.py doctor
-python3 scripts/oci_bassh.py track vmordws02 ./tf
-python3 scripts/oci_bassh.py ensure vmordws02
-python3 scripts/oci_bassh.py ssh --dry-run vmordws02
-python3 scripts/oci_bassh.py contract-check
+oci-bassh doctor
+oci-bassh track vmordws02 ./tf
+oci-bassh ensure vmordws02
+oci-bassh ssh --dry-run vmordws02
+oci-bassh contract-check
 ```
 
-The repo also includes a command wrapper:
+From a checkout:
 
 ```bash
-bin/oci-bassh doctor
-bin/oci-bassh track vmordws02 ./tf
-bin/oci-bassh ensure vmordws02
-bin/oci-bassh ssh vmordws02
+go run ./cmd/oci-bassh doctor
+go run ./cmd/oci-bassh track vmordws02 ./tf
+go run ./cmd/oci-bassh ensure vmordws02
+go run ./cmd/oci-bassh ssh vmordws02
 ```
 
 The longer aliases remain available when the caller wants names that describe
 the underlying operation exactly:
 
 ```bash
-python3 scripts/oci_bassh.py track-from-terraform vmordws02 ./tf
-python3 scripts/oci_bassh.py ensure-target vmordws02
+oci-bassh track-from-terraform vmordws02 ./tf
+oci-bassh ensure-target vmordws02
 ```
 
 For ordinary inspection, the skills prefer `oci-context status --cached -o json`,
@@ -43,7 +43,10 @@ environment settings or a context handoff.
 ## Validation
 
 ```bash
+go test ./...
+go vet ./...
 python3 -m py_compile scripts/*.py
+go build ./cmd/oci-bassh
 python3 scripts/e2e_fake_cli.py
 python3 scripts/e2e_real_binaries.py
 ```
@@ -56,3 +59,17 @@ OCI_CONTEXT_BIN=/path/to/oci-context \
 BASTION_SESSION_BIN=/path/to/bastion-session \
 python3 scripts/e2e_real_binaries.py
 ```
+
+## Contracts
+
+JSON schema files live under `schemas/`. The E2E scripts validate top-level
+compatibility for:
+
+- `oci-bassh doctor`
+- `oci-bassh track`
+- `oci-bassh ensure`
+- `oci-bassh ssh --dry-run`
+- `oci-bassh contract-check`
+
+The schemas cover the stable wrapper contract. Nested downstream payloads from
+`oci-context` and `bastion-session` remain owned by those CLIs.

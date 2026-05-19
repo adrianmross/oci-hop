@@ -21,6 +21,14 @@ jobs:
         with:
           python-version: "3.x"
 
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Build Go CLI
+        run: go build ./cmd/oci-bassh
+
       - name: Compile Python scripts
         run: python3 -m py_compile scripts/*.py
 

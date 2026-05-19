@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.3.0
+
+- Promote `oci-bassh` to a releaseable Go CLI.
+- Add GoReleaser, installer, and release workflows.
+- Add JSON contract schema files for CLI outputs.
+- Update E2E to exercise the Go CLI against fake and real downstream CLIs.
+
 ## v0.2.0
 
 - Add the `bin/oci-bassh` command wrapper.
