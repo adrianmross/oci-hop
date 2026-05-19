@@ -59,37 +59,37 @@ oci-bassh doctor
 Explain the host-facing SSH path:
 
 ```bash
-oci-bassh explain vmordws02
+oci-bassh explain app-server-01
 ```
 
 Create or reuse the bastion session and update SSH config:
 
 ```bash
-oci-bassh ensure vmordws02
+oci-bassh ensure app-server-01
 ```
 
 Connect to the compute instance, not to the bastion alias:
 
 ```bash
-ssh vmordws02
+ssh app-server-01
 ```
 
 ## Host Model
 
 The durable target is the compute host alias you already type, such as
-`vmordws02`.
+`app-server-01`.
 
 `oci-bassh` keeps the internal bastion jump host fresh, but the operator-facing
 target remains:
 
 ```sshconfig
-Host vmordws02
-  HostName 10.42.1.217
-  User opc
-  ProxyJump oabcs1-terraform-bastion
+Host app-server-01
+  HostName 10.0.1.25
+  User cloud-user
+  ProxyJump dev-bastion
 ```
 
-That means `ssh vmordws02` goes through OCI Bastion while still landing directly
+That means `ssh app-server-01` goes through OCI Bastion while still landing directly
 on the compute instance.
 
 ## Common Commands
@@ -97,12 +97,12 @@ on the compute instance.
 ```bash
 oci-bassh doctor
 oci-bassh check
-oci-bassh inspect vmordws02
-oci-bassh explain vmordws02
-oci-bassh repair --ensure vmordws02
-oci-bassh track vmordws02 ./tf
-oci-bassh ensure vmordws02
-oci-bassh ssh --dry-run vmordws02
+oci-bassh inspect app-server-01
+oci-bassh explain app-server-01
+oci-bassh repair --ensure app-server-01
+oci-bassh track app-server-01 ./tf
+oci-bassh ensure app-server-01
+oci-bassh ssh --dry-run app-server-01
 oci-bassh paths -o json
 oci-bassh version -o json
 oci-bassh upgrade
@@ -113,8 +113,8 @@ The longer aliases remain available when the caller wants names that describe
 the underlying operation exactly:
 
 ```bash
-oci-bassh track-from-terraform vmordws02 ./tf
-oci-bassh ensure-target vmordws02
+oci-bassh track-from-terraform app-server-01 ./tf
+oci-bassh ensure-target app-server-01
 ```
 
 ## Paths

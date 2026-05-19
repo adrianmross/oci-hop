@@ -1,6 +1,6 @@
 ---
 name: bastion-session
-description: Use when creating, refreshing, diagnosing, or connecting through OCI Bastion managed SSH sessions with the `bastion-session` CLI, including tracked OCI compute hosts such as vmordws02.
+description: Use when creating, refreshing, diagnosing, or connecting through OCI Bastion managed SSH sessions with the `bastion-session` CLI, including tracked OCI compute hosts such as app-server-01.
 ---
 
 # Bastion Session
@@ -47,7 +47,7 @@ bastion-session target track <host> \
   --instance-id <instance-ocid> \
   --private-ip <private-ip> \
   --bastion-id <bastion-ocid> \
-  --user opc \
+  --user cloud-user \
   --identity-file ~/.ssh/example.key
 ```
 

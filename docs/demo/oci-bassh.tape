@@ -26,12 +26,12 @@ Enter
 Show
 
 Sleep 700ms
-Type "oci-bassh explain vmordws02"
+Type "oci-bassh explain app-server-01"
 Enter
 Sleep 1400ms
-Type "oci-bassh ensure vmordws02"
+Type "oci-bassh ensure app-server-01"
 Enter
 Sleep 1200ms
-Type "ssh vmordws02"
+Type "ssh app-server-01"
 Enter
 Sleep 1800ms
