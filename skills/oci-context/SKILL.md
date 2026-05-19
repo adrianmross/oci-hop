@@ -34,10 +34,10 @@ Do not use `oci-context export` for ordinary inspection. Use `export` only when 
 
 For agent runs, prefer non-interactive paths. If a command reports `login_required`, tell the user the exact login command or rerun with explicit permission for interactive login.
 
-## Helper Script
+## Helper CLI
 
 For a compact machine-readable health check:
 
 ```bash
-python3 scripts/oci_bassh.py doctor
+oci-bassh doctor
 ```

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "oci-bassh doctor",
+  "type": "object",
+  "required": ["ok", "tools", "oci_context", "bastion_doctor", "targets"],
+  "properties": {
+    "ok": {"type": "boolean"},
+    "host": {"type": "string"},
+    "tools": {"type": "object"},
+    "oci_context": {"$ref": "oci-bassh-command-result.schema.json"},
+    "bastion_doctor": {"$ref": "oci-bassh-command-result.schema.json"},
+    "targets": {"$ref": "oci-bassh-command-result.schema.json"}
+  }
+}

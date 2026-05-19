@@ -1,0 +1,3 @@
+display_name: OCI Context
+short_description: Inspect OCI context, auth readiness, and daemon health for agent workflows.
+default_prompt: Check OCI context and auth health using machine-readable output.

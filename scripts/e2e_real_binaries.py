@@ -9,7 +9,6 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-HELPER = ROOT / "scripts" / "oci_bassh.py"
 
 
 def write_exe(path, text):
@@ -28,6 +27,33 @@ def run(cmd, env):
         print(proc.stdout)
         print(proc.stderr, file=sys.stderr)
     return proc
+
+
+REQUIRED = {
+    "oci-bassh-doctor.schema.json": ["ok", "tools", "oci_context", "bastion_doctor", "targets"],
+    "oci-bassh-ensure.schema.json": ["ok", "host", "auth", "ensure", "ssh_config", "connect_command"],
+    "oci-bassh-track.schema.json": ["ok", "host", "track", "target"],
+    "oci-bassh-ssh.schema.json": ["ok", "host", "auth", "ensure", "ssh_command"],
+}
+
+
+def validate(schema, data):
+    for key in REQUIRED[schema]:
+        if key not in data:
+            raise AssertionError(f"{schema}: missing {key}")
+
+
+def helper_cmd(tmp):
+    configured = os.environ.get("OCI_BASSH_BIN")
+    if configured:
+        return [configured]
+    binary = tmp / "oci-bassh"
+    proc = subprocess.run(["go", "build", "-o", str(binary), "./cmd/oci-bassh"], cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if proc.returncode != 0:
+        print(proc.stdout)
+        print(proc.stderr, file=sys.stderr)
+        raise SystemExit(proc.returncode)
+    return [str(binary)]
 
 
 def main():
@@ -112,20 +138,22 @@ current_context: dev
         env = os.environ.copy()
         env["PATH"] = str(bin_dir) + os.pathsep + env["PATH"]
         env["HOME"] = str(home)
+        helper = helper_cmd(tmp)
 
         checks = [
-            [sys.executable, str(HELPER), "track-from-terraform", "vmordws02", str(tf_dir)],
-            [sys.executable, str(HELPER), "track", "vmordws02", str(tf_dir)],
-            [sys.executable, str(HELPER), "ensure-target", "vmordws02"],
-            [sys.executable, str(HELPER), "ensure", "vmordws02"],
-            [sys.executable, str(HELPER), "ssh", "--dry-run", "vmordws02"],
-            [sys.executable, str(HELPER), "doctor"],
+            ("oci-bassh-track.schema.json", helper + ["track-from-terraform", "vmordws02", str(tf_dir)]),
+            ("oci-bassh-track.schema.json", helper + ["track", "vmordws02", str(tf_dir)]),
+            ("oci-bassh-ensure.schema.json", helper + ["ensure-target", "vmordws02"]),
+            ("oci-bassh-ensure.schema.json", helper + ["ensure", "vmordws02"]),
+            ("oci-bassh-ssh.schema.json", helper + ["ssh", "--dry-run", "vmordws02"]),
+            ("oci-bassh-doctor.schema.json", helper + ["doctor"]),
         ]
-        for cmd in checks:
+        for schema, cmd in checks:
             proc = run(cmd, env)
             if proc.returncode != 0:
                 return proc.returncode
             data = json.loads(proc.stdout)
+            validate(schema, data)
             if not data.get("ok"):
                 print(proc.stdout)
                 return 1

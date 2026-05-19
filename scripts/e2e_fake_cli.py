@@ -9,7 +9,6 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-HELPER = ROOT / "scripts" / "oci_bassh.py"
 
 
 def write_exe(path, text):
@@ -19,6 +18,34 @@ def write_exe(path, text):
 
 def run(cmd, env):
     return subprocess.run(cmd, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+
+
+REQUIRED = {
+    "oci-bassh-doctor.schema.json": ["ok", "tools", "oci_context", "bastion_doctor", "targets"],
+    "oci-bassh-ensure.schema.json": ["ok", "host", "auth", "ensure", "ssh_config", "connect_command"],
+    "oci-bassh-track.schema.json": ["ok", "host", "track", "target"],
+    "oci-bassh-ssh.schema.json": ["ok", "host", "auth", "ensure", "ssh_command"],
+    "oci-bassh-contract-check.schema.json": ["ok", "checks"],
+}
+
+
+def validate(schema, data):
+    for key in REQUIRED[schema]:
+        if key not in data:
+            raise AssertionError(f"{schema}: missing {key}")
+
+
+def helper_cmd(tmp):
+    configured = os.environ.get("OCI_BASSH_BIN")
+    if configured:
+        return [configured]
+    binary = tmp / "oci-bassh"
+    proc = subprocess.run(["go", "build", "-o", str(binary), "./cmd/oci-bassh"], cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if proc.returncode != 0:
+        print(proc.stdout)
+        print(proc.stderr, file=sys.stderr)
+        raise SystemExit(proc.returncode)
+    return [str(binary)]
 
 
 def main():
@@ -36,6 +63,8 @@ if args[:2] == ["auth", "ensure"]:
     print(json.dumps({{"ok": True, "state": "ready", "context": "dev", "profile": "DEFAULT", "auth_method": "api_key"}}))
 elif args[:1] == ["status"]:
     print(json.dumps({{"context": "dev", "profile": "DEFAULT", "region": "us-phoenix-1", "auth_method": "api_key"}}))
+elif args[:1] == ["doctor"]:
+    print(json.dumps({{"auth_ensure": {{"ok": True, "state": "ready"}}, "current_context": "dev"}}))
 elif args[:2] == ["auth", "show"]:
     print(json.dumps({{"context": "dev", "daemon_available": False}}))
 else:
@@ -48,6 +77,8 @@ import json, sys
 args = sys.argv[1:]
 if args[:3] == ["target", "list", "-o"]:
     print(json.dumps([]))
+elif args[:1] == ["doctor"]:
+    print(json.dumps({{"current_bastion": {{"available": True}}, "session": {{"cached": {{"lifecycle": "ACTIVE"}}}}, "ssh_include": {{"exists": True}}}}))
 elif args[:2] == ["target", "import"]:
     print("Tracked target " + args[2])
 elif args[:2] == ["target", "show"]:
@@ -75,23 +106,24 @@ exit 2
 
         env = os.environ.copy()
         env["PATH"] = str(bin_dir) + os.pathsep + env["PATH"]
+        helper = helper_cmd(tmp)
 
         checks = [
-            [sys.executable, str(HELPER), "doctor"],
-            [sys.executable, str(HELPER), "ensure-target", "vmordws02"],
-            [sys.executable, str(HELPER), "ensure", "vmordws02"],
-            [sys.executable, str(HELPER), "track-from-terraform", "vmordws02", str(tmp)],
-            [sys.executable, str(HELPER), "track", "vmordws02", str(tmp)],
-            [sys.executable, str(HELPER), "ssh", "--dry-run", "vmordws02"],
-            [sys.executable, str(HELPER), "contract-check"],
+            ("oci-bassh-doctor.schema.json", helper + ["doctor"]),
+            ("oci-bassh-ensure.schema.json", helper + ["ensure-target", "vmordws02"]),
+            ("oci-bassh-ensure.schema.json", helper + ["ensure", "vmordws02"]),
+            ("oci-bassh-track.schema.json", helper + ["track-from-terraform", "vmordws02", str(tmp)]),
+            ("oci-bassh-track.schema.json", helper + ["track", "vmordws02", str(tmp)]),
+            ("oci-bassh-ssh.schema.json", helper + ["ssh", "--dry-run", "vmordws02"]),
+            ("oci-bassh-contract-check.schema.json", helper + ["contract-check"]),
         ]
-        for cmd in checks:
+        for schema, cmd in checks:
             proc = run(cmd, env)
             if proc.returncode != 0:
                 print(proc.stdout)
                 print(proc.stderr, file=sys.stderr)
                 return proc.returncode
-            json.loads(proc.stdout)
+            validate(schema, json.loads(proc.stdout))
         print("e2e fake CLI passed")
         return 0
 

@@ -47,10 +47,10 @@ bastion-session target track <host> \
   --identity-file ~/.ssh/example.key
 ```
 
-## Helper Script
+## Helper CLI
 
 For an end-to-end ensure operation with one JSON result:
 
 ```bash
-python3 scripts/oci_bassh.py ensure-target <host>
+oci-bassh ensure-target <host>
 ```
