@@ -70,6 +70,8 @@ def main():
         (home / ".oci").mkdir()
         (home / ".ssh").mkdir()
         tf_dir.mkdir()
+        cache_dir = home / ".cache" / "bastion-session"
+        cache_dir.mkdir(parents=True)
 
         resolved_oci_context = shutil_which_or_path(oci_context)
         resolved_bastion_session = shutil_which_or_path(bastion_session)
@@ -133,6 +135,16 @@ current_context: dev
             "bastion_id": {"value": "ocid1.bastion.oc1..b1"},
             "instance_id": {"value": "ocid1.instance.oc1..i1"},
             "private_ip": {"value": "10.42.1.217"},
+        }))
+        (cache_dir / "current-bastion.json").write_text(json.dumps({
+            "id": "ocid1.bastion.oc1..b1",
+            "name": "b1",
+            "region": "us-ashburn-1",
+            "profile": "DEFAULT",
+            "auth_method": "api_key",
+            "context_name": "dev",
+            "source": "test",
+            "selected_at": "2026-05-19T00:00:00Z",
         }))
 
         env = os.environ.copy()
