@@ -1,6 +1,6 @@
 ---
 name: bastion-session
-description: Use when creating, refreshing, diagnosing, or connecting through OCI Bastion managed SSH sessions with the `bastion-session` CLI, including tracked OCI compute hosts such as app-server-01.
+description: Use when creating, refreshing, diagnosing, or connecting through OCI Bastion managed SSH sessions with the `bastion-session` CLI, including tracked OCI compute hosts such as my-vps-01.
 ---
 
 # Bastion Session
