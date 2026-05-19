@@ -1108,7 +1108,7 @@ func pathsPayload() map[string]any {
 		"ssh_config":         filepath.Join(home, ".ssh", "config"),
 		"ssh_dir":            filepath.Join(home, ".ssh"),
 		"bastion_cache":      filepath.Join(home, ".cache", "bastion-session"),
-		"install_script":     "https://raw.githubusercontent.com/adrianmross/oci-bassh/main/install.sh",
+		"install_script":     "https://raw.githubusercontent.com/adrianmross/oci-hop/main/install.sh",
 	}
 	return map[string]any{"ok": true, "paths": paths}
 }
@@ -1121,7 +1121,7 @@ func upgradeCommand(prefix, releaseVersion string) []string {
 	if releaseVersion != "" {
 		env = append(env, "VERSION="+shellQuote(releaseVersion))
 	}
-	cmd := []string{"curl", "-fsSL", "https://raw.githubusercontent.com/adrianmross/oci-bassh/main/install.sh", "|"}
+	cmd := []string{"curl", "-fsSL", "https://raw.githubusercontent.com/adrianmross/oci-hop/main/install.sh", "|"}
 	if len(env) == 0 {
 		return append(cmd, "bash")
 	}

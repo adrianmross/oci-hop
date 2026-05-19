@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo="adrianmross/oci-bassh"
+repo="adrianmross/oci-hop"
 prefix="${PREFIX:-/usr/local}"
 bin_dir="${prefix}/bin"
 version="${VERSION:-latest}"

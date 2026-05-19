@@ -53,14 +53,14 @@ Homebrew installs the primary commands and a compatibility command:
 Source install is also supported:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/adrianmross/oci-bassh/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/adrianmross/oci-hop/main/install.sh | bash
 ```
 
 By default the installer writes to `/usr/local/bin`. Override it with
 `PREFIX`:
 
 ```bash
-PREFIX="$HOME/.local" curl -sSL https://raw.githubusercontent.com/adrianmross/oci-bassh/main/install.sh | bash
+PREFIX="$HOME/.local" curl -sSL https://raw.githubusercontent.com/adrianmross/oci-hop/main/install.sh | bash
 ```
 
 ## Quickstart
