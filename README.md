@@ -5,10 +5,6 @@ about sessions, OCIDs, or temporary bastion hostnames.
 
 ![OCI Bassh terminal demo](docs/assets/oci-bassh-demo.gif)
 
-The demo is generated from `docs/demo/oci-bassh.tape` with
-[VHS](https://github.com/charmbracelet/vhs), so the README capture shows real
-terminal typing instead of a static mockup.
-
 `oci-bassh` is the small front-door CLI for the OCI SSH workflow:
 
 - explain why `ssh <host>` will or will not work
