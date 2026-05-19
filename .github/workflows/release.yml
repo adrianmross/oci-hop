@@ -40,6 +40,7 @@ jobs:
           go test ./...
           python3 -m py_compile scripts/*.py
           python3 scripts/e2e_fake_cli.py
+          rm -rf scripts/__pycache__
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v7.2.1
