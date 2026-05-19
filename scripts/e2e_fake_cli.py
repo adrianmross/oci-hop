@@ -79,7 +79,10 @@ exit 2
         checks = [
             [sys.executable, str(HELPER), "doctor"],
             [sys.executable, str(HELPER), "ensure-target", "vmordws02"],
+            [sys.executable, str(HELPER), "ensure", "vmordws02"],
             [sys.executable, str(HELPER), "track-from-terraform", "vmordws02", str(tmp)],
+            [sys.executable, str(HELPER), "track", "vmordws02", str(tmp)],
+            [sys.executable, str(HELPER), "ssh", "--dry-run", "vmordws02"],
             [sys.executable, str(HELPER), "contract-check"],
         ]
         for cmd in checks:

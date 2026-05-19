@@ -12,9 +12,27 @@ The helper script gives agents one JSON-producing surface for common flows:
 
 ```bash
 python3 scripts/oci_bassh.py doctor
+python3 scripts/oci_bassh.py track vmordws02 ./tf
+python3 scripts/oci_bassh.py ensure vmordws02
+python3 scripts/oci_bassh.py ssh --dry-run vmordws02
+python3 scripts/oci_bassh.py contract-check
+```
+
+The repo also includes a command wrapper:
+
+```bash
+bin/oci-bassh doctor
+bin/oci-bassh track vmordws02 ./tf
+bin/oci-bassh ensure vmordws02
+bin/oci-bassh ssh vmordws02
+```
+
+The longer aliases remain available when the caller wants names that describe
+the underlying operation exactly:
+
+```bash
 python3 scripts/oci_bassh.py track-from-terraform vmordws02 ./tf
 python3 scripts/oci_bassh.py ensure-target vmordws02
-python3 scripts/oci_bassh.py contract-check
 ```
 
 For ordinary inspection, the skills prefer `oci-context status --cached -o json`,

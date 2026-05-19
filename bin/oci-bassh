@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+set -eu
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/../scripts" && pwd)
+exec python3 "$SCRIPT_DIR/oci_bassh.py" "$@"

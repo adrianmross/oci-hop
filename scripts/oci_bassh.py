@@ -75,6 +75,28 @@ def ensure_target(args):
     }, 0 if ok else 1)
 
 
+def ssh_target(args):
+    auth = run_json(["oci-context", "auth", "ensure", "--output", "json"])
+    if not auth["ok"]:
+        return emit({"ok": False, "host": args.host, "auth": auth}, 1)
+    ensure_cmd = ["bastion-session", "ensure", args.host, "-o", "json"]
+    if args.identity_file:
+        ensure_cmd += ["--identity-file", args.identity_file]
+    ensured = run_json(ensure_cmd)
+    if not ensured["ok"]:
+        return emit({"ok": False, "host": args.host, "auth": auth, "ensure": ensured}, 1)
+    ssh_cmd = ["ssh", args.host] + args.ssh_args
+    if args.dry_run:
+        return emit({
+            "ok": True,
+            "host": args.host,
+            "auth": auth,
+            "ensure": ensured,
+            "ssh_command": ssh_cmd,
+        })
+    os.execvp("ssh", ssh_cmd)
+
+
 def track_from_terraform(args):
     cmd = [
         "bastion-session", "target", "import", args.host,
@@ -115,12 +137,31 @@ def main():
     p.add_argument("--identity-file")
     p.set_defaults(func=ensure_target)
 
+    p = sub.add_parser("ensure")
+    p.add_argument("host")
+    p.add_argument("--identity-file")
+    p.set_defaults(func=ensure_target)
+
     p = sub.add_parser("track-from-terraform")
     p.add_argument("host")
     p.add_argument("terraform_outputs")
     p.add_argument("--user")
     p.add_argument("--identity-file")
     p.set_defaults(func=track_from_terraform)
+
+    p = sub.add_parser("track")
+    p.add_argument("host")
+    p.add_argument("terraform_outputs")
+    p.add_argument("--user")
+    p.add_argument("--identity-file")
+    p.set_defaults(func=track_from_terraform)
+
+    p = sub.add_parser("ssh")
+    p.add_argument("host")
+    p.add_argument("--identity-file")
+    p.add_argument("--dry-run", action="store_true")
+    p.add_argument("ssh_args", nargs=argparse.REMAINDER)
+    p.set_defaults(func=ssh_target)
 
     p = sub.add_parser("contract-check")
     p.set_defaults(func=contract_check)

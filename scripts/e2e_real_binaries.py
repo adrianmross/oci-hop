@@ -115,7 +115,10 @@ current_context: dev
 
         checks = [
             [sys.executable, str(HELPER), "track-from-terraform", "vmordws02", str(tf_dir)],
+            [sys.executable, str(HELPER), "track", "vmordws02", str(tf_dir)],
             [sys.executable, str(HELPER), "ensure-target", "vmordws02"],
+            [sys.executable, str(HELPER), "ensure", "vmordws02"],
+            [sys.executable, str(HELPER), "ssh", "--dry-run", "vmordws02"],
             [sys.executable, str(HELPER), "doctor"],
         ]
         for cmd in checks:
