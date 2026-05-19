@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+host="${1:-}"
+if [[ "$host" != "vmordws02" ]]; then
+  echo "ssh demo shim: unsupported host" >&2
+  exit 2
+fi
+
+cat <<'OUT'
+Last login: Tue May 19 02:12:00 2026
+[opc@vmordws02 ~]$ hostname
+vmordws02
+[opc@vmordws02 ~]$ exit
+OUT

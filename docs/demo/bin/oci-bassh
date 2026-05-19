@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+case "${1:-}" in
+  explain)
+    cat <<'JSON'
+{
+  "host": "vmordws02",
+  "ok": true,
+  "ssh_config": {
+    "hostname": "10.42.1.217",
+    "user": "opc",
+    "proxyjump": "oabcs1-terraform-bastion"
+  }
+}
+JSON
+    ;;
+  ensure)
+    cat <<'JSON'
+{
+  "ok": true,
+  "action": "reused_active_session",
+  "ssh_target": "vmordws02",
+  "connect": "ssh vmordws02"
+}
+JSON
+    ;;
+  paths)
+    cat <<'JSON'
+{
+  "binary": "/opt/homebrew/bin/oci-bassh",
+  "ssh_include": "~/.ssh/config.d/bastion-session",
+  "tracked_targets": "~/.cache/bastion-session/tracked-targets.json"
+}
+JSON
+    ;;
+  *)
+    echo "oci-bassh demo shim: unsupported command" >&2
+    exit 2
+    ;;
+esac
