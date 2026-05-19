@@ -1,7 +1,7 @@
 {
   "name": "oci-bassh",
-  "version": "0.3.0",
-  "description": "Codex workflows for SSH to OCI compute hosts through OCI Bastion sessions.",
+  "version": "0.3.1",
+  "description": "Agent workflows for SSH to OCI compute hosts through OCI Bastion sessions.",
   "author": {
     "name": "Adrian Ross",
     "email": "adrian@example.com",
@@ -21,7 +21,7 @@
   "interface": {
     "displayName": "OCI Bassh",
     "shortDescription": "SSH to OCI hosts through Bastion.",
-    "longDescription": "Agent workflows and a Go CLI for oci-context and bastion-session. Use it to track, ensure, diagnose, and connect to OCI compute hosts through OCI Bastion managed SSH sessions.",
+    "longDescription": "Portable agent workflows and a Go CLI for oci-context and bastion-session. This Codex plugin packages the generic skills so agents can track, ensure, diagnose, and connect to OCI compute hosts through OCI Bastion managed SSH sessions.",
     "developerName": "Adrian Ross",
     "category": "Productivity",
     "capabilities": [
