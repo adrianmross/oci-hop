@@ -16,6 +16,12 @@ operator think about sessions, OCIDs, or temporary bastion hostnames.
 It wraps the lower-level `oci-context` and `bastion-session` CLIs with one
 operator-friendly Cobra command surface.
 
+## Required Dependencies
+
+- `oci-context`
+- `bastion-session`
+- OCI CLI (`oci`) with a working config/auth profile and access to the target tenancy and Bastion resources.
+
 ## Install
 
 Homebrew is the preferred install path and installs `hop` and `oci-hop` under

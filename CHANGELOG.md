@@ -2,16 +2,95 @@
 
 ## Unreleased
 
+## v0.6.4
+
+- Document required dependencies before install.
+- Add maintainer guidance explaining why release automation does not update this file.
+
+## v0.6.3
+
 - Remove the `oci-bassh` compatibility binary from releases, source install, and Homebrew packaging.
-- Simplify the README around install, quickstart, and help; move automation contract notes to `AGENTS.md`.
+- Simplify the README around install, quickstart, and help.
+- Move automation and output-contract notes to `AGENTS.md`.
+
+## v0.6.2
+
+- Update the README terminal demo to show `hop explain`, `hop`, and then explicit `ssh my-vps-01`.
+
+## v0.6.1
+
+- Update source install, upgrade, plugin metadata, and Go module paths to the canonical `adrianmross/oci-hop` repository.
+
+## v0.6.0
+
 - Rename the product to OCI Bastion Hopper with `hop` and `oci-hop` primary commands.
 - Add `hop <host>` as the safe default host action: prepare the route and stop before SSH.
+- Keep `oci-bassh` as a compatibility binary for existing scripts.
+- Refresh README, agent docs, schemas, installer, GoReleaser config, and VHS demo capture.
+
+## v0.5.9
+
+- Simplify README agent-support wording.
+
+## v0.5.8
+
+- Describe portable agent packaging across skills, generic agents, and Codex plugin metadata.
+
+## v0.5.7
+
+- Replace the Python test harness with Go tests.
+
+## v0.5.6
+
+- Move demo-generation notes out of the README and into `AGENTS.md`.
+
+## v0.5.5
+
+- Colorize terminal demo output.
+
+## v0.5.4
+
+- Use `my-vps-01` as the fictional example host.
+
+## v0.5.3
+
+- Replace real host, user, and proxy examples with fictional values.
+
+## v0.5.2
+
+- Add a VHS-generated terminal demo GIF.
+
+## v0.5.1
+
+- Refresh the README with the demo and updated usage flow.
+
+## v0.5.0
+
+- Migrate the CLI dispatcher to Cobra while preserving JSON command contracts.
+- Add `explain`, `paths`, dry-run-first `upgrade`, JSON version output, and richer generated shell completions.
+
+## v0.4.0
+
 - Add tolerant `doctor` diagnostics and strict `check` health gates.
 - Add `inspect` for cached/no-live host inspection and `repair` for fix flows.
 - Add CLI version aggregation, shell completions, and `track --terraform-dir`.
 - Extend JSON contracts and E2E coverage for diagnostics, repair, and import UX.
-- Migrate the CLI dispatcher to Cobra while preserving JSON command contracts.
-- Add `explain`, `paths`, dry-run-first `upgrade`, JSON version output, and richer generated shell completions.
+
+## v0.3.4
+
+- Seed current Bastion state in real E2E tests.
+
+## v0.3.3
+
+- Clean Python cache artifacts before release packaging.
+
+## v0.3.2
+
+- Dispatch the release workflow after auto-tagging.
+
+## v0.3.1
+
+- Pass the release tag explicitly to GoReleaser.
 
 ## v0.3.0
 
