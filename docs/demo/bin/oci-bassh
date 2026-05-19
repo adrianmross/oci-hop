@@ -1,41 +1,39 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+c_reset=$'\033[0m'
+c_key=$'\033[38;5;81m'
+c_string=$'\033[38;5;150m'
+c_bool=$'\033[38;5;221m'
+c_error=$'\033[38;5;203m'
+
+key() { printf '%b"%s"%b' "$c_key" "$1" "$c_reset"; }
+str() { printf '%b"%s"%b' "$c_string" "$1" "$c_reset"; }
+bool() { printf '%b%s%b' "$c_bool" "$1" "$c_reset"; }
+
 case "${1:-}" in
   explain)
-    cat <<'JSON'
-{
-  "host": "my-vps-01",
-  "ok": true,
-  "ssh_config": {
-    "hostname": "10.0.1.25",
-    "user": "cloud-user",
-    "proxyjump": "my-bastion"
-  }
-}
-JSON
+    printf '{\n  '; key host; printf ': '; str my-vps-01; printf ',\n'
+    printf '  '; key ok; printf ': '; bool true; printf ',\n'
+    printf '  '; key ssh_config; printf ': {\n'
+    printf '    '; key hostname; printf ': '; str 10.0.1.25; printf ',\n'
+    printf '    '; key user; printf ': '; str cloud-user; printf ',\n'
+    printf '    '; key proxyjump; printf ': '; str my-bastion; printf '\n'
+    printf '  }\n}\n'
     ;;
   ensure)
-    cat <<'JSON'
-{
-  "ok": true,
-  "action": "reused_active_session",
-  "ssh_target": "my-vps-01",
-  "connect": "ssh my-vps-01"
-}
-JSON
+    printf '{\n  '; key ok; printf ': '; bool true; printf ',\n'
+    printf '  '; key action; printf ': '; str reused_active_session; printf ',\n'
+    printf '  '; key ssh_target; printf ': '; str my-vps-01; printf ',\n'
+    printf '  '; key connect; printf ': '; str 'ssh my-vps-01'; printf '\n}\n'
     ;;
   paths)
-    cat <<'JSON'
-{
-  "binary": "/opt/homebrew/bin/oci-bassh",
-  "ssh_include": "~/.ssh/config.d/bastion-session",
-  "tracked_targets": "~/.cache/bastion-session/tracked-targets.json"
-}
-JSON
+    printf '{\n  '; key binary; printf ': '; str /opt/homebrew/bin/oci-bassh; printf ',\n'
+    printf '  '; key ssh_include; printf ': '; str '~/.ssh/config.d/bastion-session'; printf ',\n'
+    printf '  '; key tracked_targets; printf ': '; str '~/.cache/bastion-session/tracked-targets.json'; printf '\n}\n'
     ;;
   *)
-    echo "oci-bassh demo shim: unsupported command" >&2
+    printf '%boci-bassh demo shim: unsupported command%b\n' "$c_error" "$c_reset" >&2
     exit 2
     ;;
 esac
