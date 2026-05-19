@@ -12,55 +12,25 @@ operator think about sessions, OCIDs, or temporary bastion hostnames.
 - track a compute instance from Terraform outputs
 - create or renew the OCI Bastion managed SSH session
 - write the VM-facing SSH config so the final command is still `ssh <host>`
-- return stable JSON for agents and automation
 
 It wraps the lower-level `oci-context` and `bastion-session` CLIs with one
 operator-friendly Cobra command surface.
 
-## Agent Support
-
-`hop` is designed for shell-driven automation. Commands expose stable JSON
-output, predictable exit codes, and machine-readable envelopes that agents can
-use without parsing terminal text.
-
-Reusable agent guidance lives in:
-
-- `skills/`: runtime-neutral workflow instructions for `oci-context` and
-  `bastion-session`
-- `agents/`: adapter metadata and quick prompts for different agent runtimes
-- `.codex-plugin/`: Codex packaging for the same portable skills
-
-The command contracts and skills are intended for tools that can run shell
-commands and read JSON.
-
 ## Install
 
-Homebrew is the preferred install path:
+Homebrew is the preferred install path and installs `hop` and `oci-hop` under
+Homebrew's bin directory, such as `/opt/homebrew/bin` on Apple Silicon macOS:
 
 ```bash
 brew tap adrianmross/tap
 brew install oci-hop
 ```
 
-Homebrew installs the primary commands and a compatibility command:
-
-```bash
-/opt/homebrew/bin/hop
-/opt/homebrew/bin/oci-hop
-/opt/homebrew/bin/oci-bassh
-```
-
-Source install is also supported:
+Source install is also supported. It installs to `/usr/local/bin` by default;
+set `PREFIX` to choose another install prefix.
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/adrianmross/oci-hop/main/install.sh | bash
-```
-
-By default the installer writes to `/usr/local/bin`. Override it with
-`PREFIX`:
-
-```bash
-PREFIX="$HOME/.local" curl -sSL https://raw.githubusercontent.com/adrianmross/oci-hop/main/install.sh | bash
 ```
 
 ## Quickstart
@@ -113,99 +83,30 @@ Host my-vps-01
 That means `ssh my-vps-01` goes through OCI Bastion while still landing directly
 on the compute instance.
 
-## Common Commands
+## Help
+
+Use Cobra help for the full command reference:
 
 ```bash
-hop my-vps-01
-hop doctor
-hop check
-hop inspect my-vps-01
-hop explain my-vps-01
-hop repair --ensure my-vps-01
-hop track my-vps-01 ./tf
-hop ensure my-vps-01
-hop ssh --dry-run my-vps-01
-hop paths -o json
-hop version -o json
-hop upgrade
-hop contract-check
+hop --help
+hop <command> --help
 ```
 
-The qualified command and old compatibility command run the same CLI:
+The qualified command is available when scripts need a less generic binary
+name:
 
 ```bash
 oci-hop my-vps-01
-oci-bassh my-vps-01
 ```
 
-Longer aliases remain available when the caller wants names that describe the
-underlying operation exactly:
+## Agent Support
 
-```bash
-hop track-from-terraform my-vps-01 ./tf
-hop ensure-target my-vps-01
-```
+Reusable agent guidance lives in:
 
-## Paths
-
-Use `paths` when scripts or agents need to know where local state lives:
-
-```bash
-hop paths -o json
-```
-
-Typical paths:
-
-- Homebrew binaries: `/opt/homebrew/bin/hop`, `/opt/homebrew/bin/oci-hop`
-- Compatibility binary: `/opt/homebrew/bin/oci-bassh`
-- Source install binaries: `/usr/local/bin/hop`, `/usr/local/bin/oci-hop`
-- SSH include: `~/.ssh/config.d/bastion-session`
-- Bastion session cache: `~/.cache/bastion-session/state.json`
-- Tracked targets: `~/.cache/bastion-session/tracked-targets.json`
-- Current OCI context config: `~/.oci-context/config.yml`
-
-Your `~/.ssh/config` should include the managed fragment:
-
-```sshconfig
-Include ~/.ssh/config.d/bastion-session
-```
-
-## Output Contract
-
-Stable automation output is JSON. Agents should prefer `-o json`,
-`--output json`, or command-specific JSON flags instead of parsing human text.
-
-`doctor` is tolerant and always emits a result envelope. `check` is strict and
-returns non-zero when dependencies are unhealthy.
-
-`explain <host>` wraps:
-
-```bash
-bastion-session explain <host> -o json
-```
-
-and returns the downstream result inside the stable `oci-hop` envelope.
-
-For ordinary inspection, the skills prefer:
-
-```bash
-oci-context status --cached -o json
-oci-context auth show --output json
-oci-context auth ensure --output json
-```
-
-They avoid `oci-context export` unless the task is explicitly to export shell
-environment settings or a context handoff.
-
-## Shell Completions
-
-`hop` is built with Cobra and can generate completions:
-
-```bash
-hop completion zsh > "${fpath[1]}/_hop"
-hop completion bash > /usr/local/etc/bash_completion.d/hop
-hop completion fish > ~/.config/fish/completions/hop.fish
-```
+- `skills/`: runtime-neutral workflow instructions for `oci-context` and
+  `bastion-session`
+- `agents/`: adapter metadata and quick prompts for different agent runtimes
+- `.codex-plugin/`: Codex packaging for the same portable skills
 
 ## Development
 

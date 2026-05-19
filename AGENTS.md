@@ -16,6 +16,14 @@ Operational guide for maintaining OCI Bastion Hopper.
 
 ## Agent Contract
 - Use JSON output for automation wherever the CLI supports it.
+- Prefer `-o json`, `--output json`, or command-specific JSON flags over parsing human text.
+- `doctor` is tolerant and should emit a result envelope even when dependencies are unhealthy.
+- `check` is strict and returns non-zero when diagnostics are unhealthy.
+- `explain <host>` wraps `bastion-session explain <host> -o json` inside the stable `oci-hop` envelope.
+- Prefer `oci-context status --cached -o json`, `oci-context auth show --output json`, and `oci-context auth ensure --output json` for ordinary inspection.
+- Avoid `oci-context export` unless the task is explicitly to export shell environment settings or a context handoff.
+- Use `hop paths -o json` when scripts or agents need local state paths.
+- Use `hop contract-check` to verify downstream JSON command contracts.
 - Treat JSON field names as stable contract. Prefer additive fields and document any breaking output change before relying on it in workflows or scripts.
 - Keep `skills/` and `agents/` runtime-neutral. `.codex-plugin/` is a Codex adapter over the portable agent instructions, not the source of truth.
 - Preferred validation commands are `make fmt`, `make vet`, `make test`, `make lint-workflows`, and `make validate-workflows`.

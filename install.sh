@@ -53,7 +53,7 @@ if [[ "${expected_checksum}" != "${actual_checksum}" ]]; then
 fi
 tar -xzf "${tmp_dir}/${asset}" -C "${tmp_dir}"
 install -d "${bin_dir}"
-for binary in oci-hop hop oci-bassh; do
+for binary in oci-hop hop; do
   if [[ -x "${tmp_dir}/${binary}" ]]; then
     install "${tmp_dir}/${binary}" "${bin_dir}/${binary}"
     echo "Installed ${binary} to ${bin_dir}/${binary}"

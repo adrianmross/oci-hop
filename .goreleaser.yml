@@ -27,25 +27,11 @@ builds:
     goarch:
       - amd64
       - arm64
-  - id: oci-bassh
-    main: ./cmd/oci-hop
-    binary: oci-bassh
-    env:
-      - CGO_ENABLED=0
-    goos:
-      - darwin
-      - linux
-      - windows
-    goarch:
-      - amd64
-      - arm64
-
 archives:
   - id: default
     builds:
       - oci-hop
       - hop
-      - oci-bassh
     formats: ["tar.gz"]
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
