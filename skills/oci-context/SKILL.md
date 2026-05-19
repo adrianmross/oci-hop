@@ -41,3 +41,7 @@ For a compact machine-readable health check:
 ```bash
 oci-bassh doctor
 ```
+
+`oci-bassh doctor` is tolerant and should still return JSON when dependencies
+are unhealthy. Use `oci-bassh check` when an automation needs a non-zero exit
+for unhealthy diagnostics.

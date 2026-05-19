@@ -12,6 +12,9 @@ The Go CLI gives agents one JSON-producing surface for common flows:
 
 ```bash
 oci-bassh doctor
+oci-bassh check
+oci-bassh inspect vmordws02
+oci-bassh repair --ensure vmordws02
 oci-bassh track vmordws02 ./tf
 oci-bassh ensure vmordws02
 oci-bassh ssh --dry-run vmordws02
@@ -22,6 +25,7 @@ From a checkout:
 
 ```bash
 go run ./cmd/oci-bassh doctor
+go run ./cmd/oci-bassh inspect vmordws02
 go run ./cmd/oci-bassh track vmordws02 ./tf
 go run ./cmd/oci-bassh ensure vmordws02
 go run ./cmd/oci-bassh ssh vmordws02
@@ -34,6 +38,10 @@ the underlying operation exactly:
 oci-bassh track-from-terraform vmordws02 ./tf
 oci-bassh ensure-target vmordws02
 ```
+
+Use `doctor` for tolerant diagnostics that always produce JSON. Use `check`
+for strict health gates where unhealthy dependencies should return a non-zero
+exit status.
 
 For ordinary inspection, the skills prefer `oci-context status --cached -o json`,
 `oci-context auth show --output json`, and `oci-context auth ensure --output json`.
@@ -66,6 +74,9 @@ JSON schema files live under `schemas/`. The E2E scripts validate top-level
 compatibility for:
 
 - `oci-bassh doctor`
+- `oci-bassh check`
+- `oci-bassh inspect`
+- `oci-bassh repair`
 - `oci-bassh track`
 - `oci-bassh ensure`
 - `oci-bassh ssh --dry-run`

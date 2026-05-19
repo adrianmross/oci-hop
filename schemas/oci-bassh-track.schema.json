@@ -6,6 +6,7 @@
   "properties": {
     "ok": {"type": "boolean"},
     "host": {"type": "string"},
+    "issue": {"type": "object"},
     "track": {"$ref": "oci-bassh-command-result.schema.json"},
     "target": {"$ref": "oci-bassh-command-result.schema.json"}
   }

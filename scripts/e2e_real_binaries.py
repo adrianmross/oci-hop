@@ -30,7 +30,10 @@ def run(cmd, env):
 
 
 REQUIRED = {
-    "oci-bassh-doctor.schema.json": ["ok", "tools", "oci_context", "bastion_doctor", "targets"],
+    "oci-bassh-doctor.schema.json": ["ok", "tools", "versions", "oci_context", "bastion_doctor", "targets"],
+    "oci-bassh-check.schema.json": ["ok", "tools", "versions", "oci_context", "bastion_doctor", "targets"],
+    "oci-bassh-inspect.schema.json": ["ok", "host", "versions", "oci_status", "auth", "bastion_doctor", "ssh_config", "ssh_effective"],
+    "oci-bassh-repair.schema.json": ["ok", "host", "repair", "ensure_requested", "connect_command"],
     "oci-bassh-ensure.schema.json": ["ok", "host", "auth", "ensure", "ssh_config", "connect_command"],
     "oci-bassh-track.schema.json": ["ok", "host", "track", "target"],
     "oci-bassh-ssh.schema.json": ["ok", "host", "auth", "ensure", "ssh_command"],
@@ -155,10 +158,15 @@ current_context: dev
         checks = [
             ("oci-bassh-track.schema.json", helper + ["track-from-terraform", "vmordws02", str(tf_dir)]),
             ("oci-bassh-track.schema.json", helper + ["track", "vmordws02", str(tf_dir)]),
+            ("oci-bassh-track.schema.json", helper + ["track", "vmordws02", "--terraform-dir", str(tf_dir)]),
             ("oci-bassh-ensure.schema.json", helper + ["ensure-target", "vmordws02"]),
             ("oci-bassh-ensure.schema.json", helper + ["ensure", "vmordws02"]),
             ("oci-bassh-ssh.schema.json", helper + ["ssh", "--dry-run", "vmordws02"]),
             ("oci-bassh-doctor.schema.json", helper + ["doctor"]),
+            ("oci-bassh-check.schema.json", helper + ["check"]),
+            ("oci-bassh-inspect.schema.json", helper + ["inspect", "vmordws02"]),
+            ("oci-bassh-repair.schema.json", helper + ["repair", "vmordws02"]),
+            ("oci-bassh-repair.schema.json", helper + ["repair", "--ensure", "vmordws02"]),
         ]
         for schema, cmd in checks:
             proc = run(cmd, env)

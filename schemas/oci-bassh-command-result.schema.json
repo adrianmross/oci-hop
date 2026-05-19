@@ -9,6 +9,9 @@
     "exit_code": {"type": "integer"},
     "stdout": {"type": "string"},
     "stderr": {"type": "string"},
+    "error_code": {"type": "string"},
+    "message": {"type": "string"},
+    "next_command": {"type": "string"},
     "json": {}
   }
 }

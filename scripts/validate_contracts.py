@@ -9,7 +9,10 @@ SCHEMAS = ROOT / "schemas"
 
 
 REQUIRED = {
-    "oci-bassh-doctor.schema.json": ["ok", "tools", "oci_context", "bastion_doctor", "targets"],
+    "oci-bassh-doctor.schema.json": ["ok", "tools", "versions", "oci_context", "bastion_doctor", "targets"],
+    "oci-bassh-check.schema.json": ["ok", "tools", "versions", "oci_context", "bastion_doctor", "targets"],
+    "oci-bassh-inspect.schema.json": ["ok", "host", "versions", "oci_status", "auth", "bastion_doctor", "ssh_config", "ssh_effective"],
+    "oci-bassh-repair.schema.json": ["ok", "host", "repair", "ensure_requested", "connect_command"],
     "oci-bassh-ensure.schema.json": ["ok", "host", "auth", "ensure", "ssh_config", "connect_command"],
     "oci-bassh-track.schema.json": ["ok", "host", "track", "target"],
     "oci-bassh-ssh.schema.json": ["ok", "host", "auth", "ensure", "ssh_command"],

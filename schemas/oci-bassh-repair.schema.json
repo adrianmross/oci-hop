@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "oci-bassh repair",
+  "type": "object",
+  "required": ["ok", "host", "repair", "ensure_requested", "connect_command"],
+  "properties": {
+    "ok": {"type": "boolean"},
+    "host": {"type": "string"},
+    "repair": {"$ref": "oci-bassh-command-result.schema.json"},
+    "ensure_requested": {"type": "boolean"},
+    "connect_command": {"type": "string"},
+    "issue": {"type": "object"},
+    "repair_issue": {"type": "object"},
+    "auth": {"$ref": "oci-bassh-command-result.schema.json"},
+    "ensure": {"$ref": "oci-bassh-command-result.schema.json"},
+    "ssh_config": {"$ref": "oci-bassh-command-result.schema.json"}
+  }
+}

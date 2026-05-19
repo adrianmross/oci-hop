@@ -17,12 +17,21 @@ var (
 )
 
 type commandResult struct {
-	Command  []string         `json:"command"`
-	OK       bool             `json:"ok"`
-	ExitCode int              `json:"exit_code"`
-	Stdout   string           `json:"stdout"`
-	Stderr   string           `json:"stderr"`
-	JSON     *json.RawMessage `json:"json,omitempty"`
+	Command     []string         `json:"command"`
+	OK          bool             `json:"ok"`
+	ExitCode    int              `json:"exit_code"`
+	Stdout      string           `json:"stdout"`
+	Stderr      string           `json:"stderr"`
+	ErrorCode   string           `json:"error_code,omitempty"`
+	Message     string           `json:"message,omitempty"`
+	NextCommand string           `json:"next_command,omitempty"`
+	JSON        *json.RawMessage `json:"json,omitempty"`
+}
+
+type issue struct {
+	ErrorCode   string `json:"error_code"`
+	Message     string `json:"message"`
+	NextCommand string `json:"next_command,omitempty"`
 }
 
 func main() {
@@ -49,12 +58,20 @@ func run(args []string) error {
 		return nil
 	case "doctor":
 		return cmdDoctor(args[1:])
+	case "check":
+		return cmdCheck(args[1:])
+	case "inspect":
+		return cmdInspect(args[1:])
+	case "repair":
+		return cmdRepair(args[1:])
 	case "ensure", "ensure-target":
 		return cmdEnsure(args[1:])
 	case "track", "track-from-terraform":
 		return cmdTrack(args[1:])
 	case "ssh":
 		return cmdSSH(args[1:])
+	case "completion":
+		return cmdCompletion(args[1:])
 	case "contract-check":
 		return cmdContractCheck(args[1:])
 	default:
@@ -67,9 +84,14 @@ func usage(w *os.File) {
 
 Usage:
   oci-bassh doctor [host]
+  oci-bassh check [host]
+  oci-bassh inspect <host>
+  oci-bassh repair <host> [--ensure] [--identity-file PATH]
   oci-bassh track <host> <terraform-outputs> [--user USER] [--identity-file PATH]
+  oci-bassh track <host> --terraform-dir DIR [--user USER] [--identity-file PATH]
   oci-bassh ensure <host> [--identity-file PATH]
   oci-bassh ssh [--dry-run] [--identity-file PATH] <host> [-- ssh args...]
+  oci-bassh completion bash|zsh|fish
   oci-bassh contract-check`)
 }
 
@@ -78,6 +100,26 @@ func cmdDoctor(args []string) error {
 	if err != nil {
 		return err
 	}
+	out := doctorPayload(host)
+	return emit(out)
+}
+
+func cmdCheck(args []string) error {
+	host, err := optionalHostFor("check", args)
+	if err != nil {
+		return err
+	}
+	out := doctorPayload(host)
+	if err := emit(out); err != nil {
+		return err
+	}
+	if ok, _ := out["ok"].(bool); !ok {
+		return cliError{code: 1, msg: "check found issues"}
+	}
+	return nil
+}
+
+func doctorPayload(host string) map[string]any {
 	tools := map[string]string{}
 	for _, name := range []string{"oci-context", "bastion-session", "ssh"} {
 		if p, err := exec.LookPath(name); err == nil {
@@ -97,15 +139,89 @@ func cmdDoctor(args []string) error {
 		"ok":             ok,
 		"host":           host,
 		"tools":          tools,
+		"versions":       versions(),
 		"oci_context":    oci,
 		"bastion_doctor": bastion,
 		"targets":        targets,
+	}
+	if !ok {
+		out["issue"] = firstIssue("doctor found issues", nextForHost("oci-bassh repair", host), oci, bastion, targets)
+	}
+	return out
+}
+
+func cmdInspect(args []string) error {
+	host, err := requiredHostOnly("inspect", args)
+	if err != nil {
+		return err
+	}
+	status := runJSON("oci-context", "status", "--cached", "-o", "json")
+	auth := runJSON("oci-context", "auth", "show", "--output", "json")
+	bastion := runJSON("bastion-session", "doctor", host, "--cached", "-o", "json")
+	sshConfig := runJSON("bastion-session", "ssh-config", "show", host, "-o", "json")
+	sshEffective := runCommand("ssh", "-G", host)
+	ok := status.OK && auth.OK && bastion.OK && sshConfig.OK && sshEffective.OK
+	out := map[string]any{
+		"ok":             ok,
+		"host":           host,
+		"versions":       versions(),
+		"oci_status":     status,
+		"auth":           auth,
+		"bastion_doctor": bastion,
+		"ssh_config":     sshConfig,
+		"ssh_effective":  sshEffective,
+	}
+	if !ok {
+		out["issue"] = firstIssue("inspect found issues", nextForHost("oci-bassh repair", host), status, auth, bastion, sshConfig, sshEffective)
+	}
+	return emit(out)
+}
+
+func cmdRepair(args []string) error {
+	host, identityFile, ensure, err := parseRepairArgs(args)
+	if err != nil {
+		return err
+	}
+	repaired := runJSON("bastion-session", "doctor", host, "--fix", "-o", "json")
+	var auth commandResult
+	var ensured commandResult
+	var sshConfig commandResult
+	connectCommand := "ssh " + host
+	ok := repaired.OK
+	if ensure {
+		auth = runJSON("oci-context", "auth", "ensure", "--output", "json")
+		ensureArgs := []string{"ensure", host, "-o", "json"}
+		if identityFile != "" {
+			ensureArgs = append(ensureArgs, "--identity-file", identityFile)
+		}
+		ensured = runJSON("bastion-session", ensureArgs...)
+		sshConfig = runJSON("bastion-session", "ssh-config", "show", host, "-o", "json")
+		ok = auth.OK && ensured.OK && sshConfig.OK
+		connectCommand = connectCommandFrom(host, ensured)
+	}
+	out := map[string]any{
+		"ok":               ok,
+		"host":             host,
+		"repair":           repaired,
+		"ensure_requested": ensure,
+		"connect_command":  connectCommand,
+	}
+	if ensure {
+		out["auth"] = auth
+		out["ensure"] = ensured
+		out["ssh_config"] = sshConfig
+		if !repaired.OK {
+			out["repair_issue"] = firstIssue("repair found remaining issues", nextForHost("oci-bassh inspect", host), repaired)
+		}
+	}
+	if !ok {
+		out["issue"] = firstIssue("repair failed", nextForHost("oci-bassh inspect", host), auth, ensured, sshConfig, repaired)
 	}
 	if err := emit(out); err != nil {
 		return err
 	}
 	if !ok {
-		return cliError{code: 1, msg: "doctor found issues"}
+		return cliError{code: 1, msg: "repair failed"}
 	}
 	return nil
 }
@@ -123,23 +239,19 @@ func cmdEnsure(args []string) error {
 	ensured := runJSON("bastion-session", ensureArgs...)
 	sshConfig := runJSON("bastion-session", "ssh-config", "show", host, "-o", "json")
 	ok := auth.OK && ensured.OK && sshConfig.OK
-	connectCommand := "ssh " + host
-	if ensured.JSON != nil {
-		var obj map[string]any
-		if json.Unmarshal(*ensured.JSON, &obj) == nil {
-			if v, _ := obj["connect_command"].(string); v != "" {
-				connectCommand = v
-			}
-		}
-	}
-	if err := emit(map[string]any{
+	connectCommand := connectCommandFrom(host, ensured)
+	out := map[string]any{
 		"ok":              ok,
 		"host":            host,
 		"auth":            auth,
 		"ensure":          ensured,
 		"ssh_config":      sshConfig,
 		"connect_command": connectCommand,
-	}); err != nil {
+	}
+	if !ok {
+		out["issue"] = firstIssue("ensure failed", nextForHost("oci-bassh repair --ensure", host), auth, ensured, sshConfig)
+	}
+	if err := emit(out); err != nil {
 		return err
 	}
 	if !ok {
@@ -149,28 +261,20 @@ func cmdEnsure(args []string) error {
 }
 
 func cmdTrack(args []string) error {
-	if len(args) < 2 {
-		return cliError{code: 2, msg: "track requires <host> <terraform-outputs>"}
+	host, tf, passthrough, err := parseTrackArgs(args)
+	if err != nil {
+		return err
 	}
-	host := args[0]
-	tf := args[1]
 	cmdArgs := []string{"target", "import", host, "--terraform-outputs", tf}
-	for i := 2; i < len(args); i++ {
-		switch args[i] {
-		case "--user", "--identity-file":
-			if i+1 >= len(args) {
-				return cliError{code: 2, msg: args[i] + " requires a value"}
-			}
-			cmdArgs = append(cmdArgs, args[i], args[i+1])
-			i++
-		default:
-			return cliError{code: 2, msg: "unknown track flag: " + args[i]}
-		}
-	}
+	cmdArgs = append(cmdArgs, passthrough...)
 	tracked := runJSON("bastion-session", cmdArgs...)
 	shown := runJSON("bastion-session", "target", "show", host, "-o", "json")
 	ok := tracked.OK && shown.OK
-	if err := emit(map[string]any{"ok": ok, "host": host, "track": tracked, "target": shown}); err != nil {
+	out := map[string]any{"ok": ok, "host": host, "track": tracked, "target": shown}
+	if !ok {
+		out["issue"] = firstIssue("track failed", nextForHost("oci-bassh inspect", host), tracked, shown)
+	}
+	if err := emit(out); err != nil {
 		return err
 	}
 	if !ok {
@@ -193,7 +297,11 @@ func cmdSSH(args []string) error {
 	ok := auth.OK && ensured.OK
 	sshCmd := append([]string{"ssh", host}, sshArgs...)
 	if dryRun {
-		if err := emit(map[string]any{"ok": ok, "host": host, "auth": auth, "ensure": ensured, "ssh_command": sshCmd}); err != nil {
+		out := map[string]any{"ok": ok, "host": host, "auth": auth, "ensure": ensured, "ssh_command": sshCmd}
+		if !ok {
+			out["issue"] = firstIssue("ssh preparation failed", nextForHost("oci-bassh repair --ensure", host), auth, ensured)
+		}
+		if err := emit(out); err != nil {
 			return err
 		}
 		if !ok {
@@ -202,12 +310,40 @@ func cmdSSH(args []string) error {
 		return nil
 	}
 	if !ok {
-		if err := emit(map[string]any{"ok": false, "host": host, "auth": auth, "ensure": ensured, "ssh_command": sshCmd}); err != nil {
+		out := map[string]any{"ok": false, "host": host, "auth": auth, "ensure": ensured, "ssh_command": sshCmd, "issue": firstIssue("ssh preparation failed", nextForHost("oci-bassh repair --ensure", host), auth, ensured)}
+		if err := emit(out); err != nil {
 			return err
 		}
 		return cliError{code: 1, msg: "ssh preparation failed"}
 	}
 	return syscallExec("ssh", sshCmd)
+}
+
+func cmdCompletion(args []string) error {
+	if len(args) != 1 {
+		return cliError{code: 2, msg: "completion requires bash, zsh, or fish"}
+	}
+	switch args[0] {
+	case "bash":
+		fmt.Print(`_oci_bassh_complete()
+{
+  local cur="${COMP_WORDS[COMP_CWORD]}"
+  local cmds="doctor check inspect repair track track-from-terraform ensure ensure-target ssh completion contract-check version"
+  COMPREPLY=( $(compgen -W "$cmds" -- "$cur") )
+}
+complete -F _oci_bassh_complete oci-bassh
+`)
+	case "zsh":
+		fmt.Print(`#compdef oci-bassh
+_arguments '1:command:(doctor check inspect repair track track-from-terraform ensure ensure-target ssh completion contract-check version)'
+`)
+	case "fish":
+		fmt.Print(`complete -c oci-bassh -f -a "doctor check inspect repair track track-from-terraform ensure ensure-target ssh completion contract-check version"
+`)
+	default:
+		return cliError{code: 2, msg: "completion requires bash, zsh, or fish"}
+	}
+	return nil
 }
 
 func cmdContractCheck(args []string) error {
@@ -233,6 +369,10 @@ func cmdContractCheck(args []string) error {
 }
 
 func runJSON(name string, args ...string) commandResult {
+	return runCommand(name, args...)
+}
+
+func runCommand(name string, args ...string) commandResult {
 	cmdArgs := append([]string{name}, args...)
 	cmd := exec.Command(name, args...)
 	var stdout bytes.Buffer
@@ -241,11 +381,28 @@ func runJSON(name string, args ...string) commandResult {
 	cmd.Stderr = &stderr
 	err := cmd.Run()
 	rc := 0
+	errorCode := ""
+	message := ""
 	if err != nil {
 		rc = 1
 		var ee *exec.ExitError
 		if errors.As(err, &ee) {
 			rc = ee.ExitCode()
+			errorCode = "command_failed"
+			message = strings.TrimSpace(stderr.String())
+			if message == "" {
+				message = err.Error()
+			}
+		} else {
+			var execErr *exec.Error
+			if errors.As(err, &execErr) {
+				rc = 127
+				errorCode = "command_not_found"
+				message = execErr.Error()
+			} else {
+				errorCode = "command_error"
+				message = err.Error()
+			}
 		}
 	}
 	var raw *json.RawMessage
@@ -254,7 +411,7 @@ func runJSON(name string, args ...string) commandResult {
 		cp := json.RawMessage(append([]byte(nil), trimmed...))
 		raw = &cp
 	}
-	return commandResult{Command: cmdArgs, OK: err == nil, ExitCode: rc, Stdout: stdout.String(), Stderr: stderr.String(), JSON: raw}
+	return commandResult{Command: cmdArgs, OK: err == nil, ExitCode: rc, Stdout: stdout.String(), Stderr: stderr.String(), ErrorCode: errorCode, Message: message, JSON: raw}
 }
 
 func emit(v any) error {
@@ -264,13 +421,28 @@ func emit(v any) error {
 }
 
 func optionalHost(args []string) (string, error) {
+	return optionalHostFor("doctor", args)
+}
+
+func optionalHostFor(command string, args []string) (string, error) {
 	if len(args) > 1 {
-		return "", cliError{code: 2, msg: "doctor accepts at most one host"}
+		return "", cliError{code: 2, msg: command + " accepts at most one host"}
 	}
 	if len(args) == 0 {
 		return "", nil
 	}
 	return strings.TrimSpace(args[0]), nil
+}
+
+func requiredHostOnly(command string, args []string) (string, error) {
+	if len(args) != 1 {
+		return "", cliError{code: 2, msg: command + " requires exactly one host"}
+	}
+	host := strings.TrimSpace(args[0])
+	if host == "" {
+		return "", cliError{code: 2, msg: "host is required"}
+	}
+	return host, nil
 }
 
 func parseHostIdentity(args []string) (host, identityFile string, err error) {
@@ -293,6 +465,74 @@ func parseHostIdentity(args []string) (host, identityFile string, err error) {
 		return "", "", cliError{code: 2, msg: "host is required"}
 	}
 	return host, identityFile, nil
+}
+
+func parseRepairArgs(args []string) (host, identityFile string, ensure bool, err error) {
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--ensure":
+			ensure = true
+		case "--identity-file":
+			if i+1 >= len(args) {
+				return "", "", false, cliError{code: 2, msg: "--identity-file requires a value"}
+			}
+			identityFile = args[i+1]
+			i++
+		default:
+			if strings.HasPrefix(args[i], "-") {
+				return "", "", false, cliError{code: 2, msg: "unknown repair flag: " + args[i]}
+			}
+			if host != "" {
+				return "", "", false, cliError{code: 2, msg: "unexpected argument: " + args[i]}
+			}
+			host = args[i]
+		}
+	}
+	if strings.TrimSpace(host) == "" {
+		return "", "", false, cliError{code: 2, msg: "host is required"}
+	}
+	return host, identityFile, ensure, nil
+}
+
+func parseTrackArgs(args []string) (host, terraformOutputs string, passthrough []string, err error) {
+	if len(args) < 1 {
+		return "", "", nil, cliError{code: 2, msg: "track requires <host> <terraform-outputs> or <host> --terraform-dir DIR"}
+	}
+	host = strings.TrimSpace(args[0])
+	if host == "" {
+		return "", "", nil, cliError{code: 2, msg: "host is required"}
+	}
+	for i := 1; i < len(args); i++ {
+		switch args[i] {
+		case "--terraform-dir":
+			if i+1 >= len(args) {
+				return "", "", nil, cliError{code: 2, msg: "--terraform-dir requires a value"}
+			}
+			if terraformOutputs != "" {
+				return "", "", nil, cliError{code: 2, msg: "terraform outputs specified more than once"}
+			}
+			terraformOutputs = args[i+1]
+			i++
+		case "--user", "--identity-file":
+			if i+1 >= len(args) {
+				return "", "", nil, cliError{code: 2, msg: args[i] + " requires a value"}
+			}
+			passthrough = append(passthrough, args[i], args[i+1])
+			i++
+		default:
+			if strings.HasPrefix(args[i], "-") {
+				return "", "", nil, cliError{code: 2, msg: "unknown track flag: " + args[i]}
+			}
+			if terraformOutputs != "" {
+				return "", "", nil, cliError{code: 2, msg: "unexpected argument: " + args[i]}
+			}
+			terraformOutputs = args[i]
+		}
+	}
+	if strings.TrimSpace(terraformOutputs) == "" {
+		return "", "", nil, cliError{code: 2, msg: "terraform outputs path is required"}
+	}
+	return host, terraformOutputs, passthrough, nil
 }
 
 func parseSSHArgs(args []string) (host, identityFile string, dryRun bool, sshArgs []string, err error) {
@@ -325,6 +565,55 @@ func requireHost(host, identityFile string, dryRun bool, sshArgs []string) (stri
 		return "", "", false, nil, cliError{code: 2, msg: "host is required"}
 	}
 	return host, identityFile, dryRun, sshArgs, nil
+}
+
+func connectCommandFrom(host string, result commandResult) string {
+	if result.JSON != nil {
+		var obj map[string]any
+		if json.Unmarshal(*result.JSON, &obj) == nil {
+			if v, _ := obj["connect_command"].(string); v != "" {
+				return v
+			}
+		}
+	}
+	return "ssh " + host
+}
+
+func versions() map[string]commandResult {
+	return map[string]commandResult{
+		"oci_bassh":       {Command: []string{"oci-bassh", "--version"}, OK: true, ExitCode: 0, Stdout: version + "\n"},
+		"oci_context":     runCommand("oci-context", "--version"),
+		"bastion_session": runCommand("bastion-session", "--version"),
+		"ssh":             runCommand("ssh", "-V"),
+	}
+}
+
+func firstIssue(message, nextCommand string, results ...commandResult) issue {
+	for _, result := range results {
+		if len(result.Command) == 0 || result.OK {
+			continue
+		}
+		code := result.ErrorCode
+		if code == "" {
+			code = "command_failed"
+		}
+		msg := result.Message
+		if msg == "" {
+			msg = strings.TrimSpace(result.Stderr)
+		}
+		if msg == "" {
+			msg = message
+		}
+		return issue{ErrorCode: code, Message: msg, NextCommand: nextCommand}
+	}
+	return issue{ErrorCode: "not_ok", Message: message, NextCommand: nextCommand}
+}
+
+func nextForHost(prefix, host string) string {
+	if strings.TrimSpace(host) == "" {
+		return strings.TrimSpace(prefix)
+	}
+	return strings.TrimSpace(prefix) + " " + host
 }
 
 type cliError struct {
