@@ -17,11 +17,15 @@ Use this skill for OCI Bastion managed SSH access. Prefer compute-host-facing ta
    ```bash
    bastion-session target list -o json
    ```
-3. Ensure the VM-facing SSH target:
+3. Inspect a target without creating sessions:
+   ```bash
+   oci-bassh inspect <host>
+   ```
+4. Ensure the VM-facing SSH target:
    ```bash
    bastion-session ensure <host> -o json
    ```
-4. Verify SSH config resolution:
+5. Verify SSH config resolution:
    ```bash
    bastion-session ssh-config show <host> -o json
    ```
@@ -53,4 +57,10 @@ For an end-to-end ensure operation with one JSON result:
 
 ```bash
 oci-bassh ensure-target <host>
+```
+
+For repairable setup drift, use:
+
+```bash
+oci-bassh repair --ensure <host>
 ```

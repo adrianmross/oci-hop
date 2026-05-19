@@ -6,6 +6,7 @@
   "properties": {
     "ok": {"type": "boolean"},
     "host": {"type": "string"},
+    "issue": {"type": "object"},
     "auth": {"$ref": "oci-bassh-command-result.schema.json"},
     "ensure": {"$ref": "oci-bassh-command-result.schema.json"},
     "ssh_command": {"type": "array", "items": {"type": "string"}}

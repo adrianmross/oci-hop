@@ -21,7 +21,10 @@ def run(cmd, env):
 
 
 REQUIRED = {
-    "oci-bassh-doctor.schema.json": ["ok", "tools", "oci_context", "bastion_doctor", "targets"],
+    "oci-bassh-doctor.schema.json": ["ok", "tools", "versions", "oci_context", "bastion_doctor", "targets"],
+    "oci-bassh-check.schema.json": ["ok", "tools", "versions", "oci_context", "bastion_doctor", "targets"],
+    "oci-bassh-inspect.schema.json": ["ok", "host", "versions", "oci_status", "auth", "bastion_doctor", "ssh_config", "ssh_effective"],
+    "oci-bassh-repair.schema.json": ["ok", "host", "repair", "ensure_requested", "connect_command"],
     "oci-bassh-ensure.schema.json": ["ok", "host", "auth", "ensure", "ssh_config", "connect_command"],
     "oci-bassh-track.schema.json": ["ok", "host", "track", "target"],
     "oci-bassh-ssh.schema.json": ["ok", "host", "auth", "ensure", "ssh_command"],
@@ -63,6 +66,8 @@ if args[:2] == ["auth", "ensure"]:
     print(json.dumps({{"ok": True, "state": "ready", "context": "dev", "profile": "DEFAULT", "auth_method": "api_key"}}))
 elif args[:1] == ["status"]:
     print(json.dumps({{"context": "dev", "profile": "DEFAULT", "region": "us-phoenix-1", "auth_method": "api_key"}}))
+elif args[:1] in [["-v"], ["--version"], ["version"]]:
+    print("0.99.0")
 elif args[:1] == ["doctor"]:
     print(json.dumps({{"auth_ensure": {{"ok": True, "state": "ready"}}, "current_context": "dev"}}))
 elif args[:2] == ["auth", "show"]:
@@ -75,9 +80,15 @@ else:
         write_exe(bin_dir / "bastion-session", f"""#!/usr/bin/env python3
 import json, sys
 args = sys.argv[1:]
-if args[:3] == ["target", "list", "-o"]:
+if args[:1] in [["-v"], ["--version"], ["version"]]:
+    print("0.99.0")
+elif args[:3] == ["target", "list", "-o"]:
     print(json.dumps([]))
 elif args[:1] == ["doctor"]:
+    if __import__("os").environ.get("BASTION_SESSION_FAIL_DOCTOR"):
+        print(json.dumps({{"ok": False, "issues": [{{"message": "broken fixture"}}]}}))
+        print("broken fixture", file=sys.stderr)
+        sys.exit(1)
     print(json.dumps({{"current_bastion": {{"available": True}}, "session": {{"cached": {{"lifecycle": "ACTIVE"}}}}, "ssh_include": {{"exists": True}}}}))
 elif args[:2] == ["target", "import"]:
     print("Tracked target " + args[2])
@@ -110,10 +121,15 @@ exit 2
 
         checks = [
             ("oci-bassh-doctor.schema.json", helper + ["doctor"]),
+            ("oci-bassh-check.schema.json", helper + ["check"]),
+            ("oci-bassh-inspect.schema.json", helper + ["inspect", "vmordws02"]),
+            ("oci-bassh-repair.schema.json", helper + ["repair", "vmordws02"]),
+            ("oci-bassh-repair.schema.json", helper + ["repair", "--ensure", "vmordws02"]),
             ("oci-bassh-ensure.schema.json", helper + ["ensure-target", "vmordws02"]),
             ("oci-bassh-ensure.schema.json", helper + ["ensure", "vmordws02"]),
             ("oci-bassh-track.schema.json", helper + ["track-from-terraform", "vmordws02", str(tmp)]),
             ("oci-bassh-track.schema.json", helper + ["track", "vmordws02", str(tmp)]),
+            ("oci-bassh-track.schema.json", helper + ["track", "vmordws02", "--terraform-dir", str(tmp)]),
             ("oci-bassh-ssh.schema.json", helper + ["ssh", "--dry-run", "vmordws02"]),
             ("oci-bassh-contract-check.schema.json", helper + ["contract-check"]),
         ]
@@ -124,6 +140,23 @@ exit 2
                 print(proc.stderr, file=sys.stderr)
                 return proc.returncode
             validate(schema, json.loads(proc.stdout))
+        fail_env = env.copy()
+        fail_env["BASTION_SESSION_FAIL_DOCTOR"] = "1"
+        doctor = run(helper + ["doctor", "vmordws02"], fail_env)
+        if doctor.returncode != 0:
+            print("doctor should emit diagnostics with exit 0", file=sys.stderr)
+            return 1
+        doctor_payload = json.loads(doctor.stdout)
+        validate("oci-bassh-doctor.schema.json", doctor_payload)
+        if doctor_payload.get("ok") is not False or "issue" not in doctor_payload:
+            print("doctor failure payload did not include ok=false issue", file=sys.stderr)
+            return 1
+        check = run(helper + ["check", "vmordws02"], fail_env)
+        if check.returncode == 0:
+            print("check should exit nonzero when diagnostics are unhealthy", file=sys.stderr)
+            return 1
+        check_payload = json.loads(check.stdout)
+        validate("oci-bassh-check.schema.json", check_payload)
         print("e2e fake CLI passed")
         return 0
 

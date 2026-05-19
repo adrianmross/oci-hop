@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "oci-bassh doctor",
+  "title": "oci-bassh check",
   "type": "object",
   "required": ["ok", "tools", "versions", "oci_context", "bastion_doctor", "targets"],
   "properties": {

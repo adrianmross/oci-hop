@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Add tolerant `doctor` diagnostics and strict `check` health gates.
+- Add `inspect` for cached/no-live host inspection and `repair` for fix flows.
+- Add CLI version aggregation, shell completions, and `track --terraform-dir`.
+- Extend JSON contracts and E2E coverage for diagnostics, repair, and import UX.
+
 ## v0.3.0
 
 - Promote `oci-bassh` to a releaseable Go CLI.
