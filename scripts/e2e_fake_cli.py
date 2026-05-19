@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-HELPER = ROOT / "scripts" / "oci_remote_workstation.py"
+HELPER = ROOT / "scripts" / "oci_bassh.py"
 
 
 def write_exe(path, text):

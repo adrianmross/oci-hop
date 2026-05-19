@@ -1,26 +1,27 @@
 {
-  "name": "oci-remote-workstation",
+  "name": "oci-bassh",
   "version": "0.1.0",
-  "description": "Codex workflows for OCI context auth and bastion-backed remote workstation SSH access.",
+  "description": "Codex workflows for SSH to OCI compute hosts through OCI Bastion sessions.",
   "author": {
     "name": "Adrian Ross",
     "email": "adrian@example.com",
     "url": "https://github.com/adrianmross"
   },
   "homepage": "https://github.com/adrianmross",
-  "repository": "https://github.com/adrianmross/oci-remote-workstation",
+  "repository": "https://github.com/adrianmross/oci-bassh",
   "license": "MIT",
   "keywords": [
     "oci",
     "bastion",
     "ssh",
-    "remote-workstation"
+    "compute",
+    "bassh"
   ],
   "skills": "./skills/",
   "interface": {
-    "displayName": "OCI Remote Workstation",
-    "shortDescription": "Manage OCI context auth and bastion-backed SSH targets.",
-    "longDescription": "Agent workflows and deterministic helper scripts for oci-context and bastion-session CLIs.",
+    "displayName": "OCI Bassh",
+    "shortDescription": "SSH to OCI hosts through Bastion.",
+    "longDescription": "Agent workflows and deterministic helper scripts for oci-context and bastion-session CLIs. Use it to track, ensure, diagnose, and connect to OCI compute hosts through OCI Bastion managed SSH sessions.",
     "developerName": "Adrian Ross",
     "category": "Productivity",
     "capabilities": [
@@ -31,9 +32,9 @@
     "privacyPolicyURL": "https://github.com/adrianmross",
     "termsOfServiceURL": "https://github.com/adrianmross",
     "defaultPrompt": [
-      "Connect to vmordws02 through OCI bastion.",
+      "Connect to an OCI host through Bastion.",
       "Check my OCI auth and bastion session health.",
-      "Track this workstation from Terraform outputs."
+      "Track this compute host from Terraform outputs."
     ],
     "brandColor": "#2563EB"
   }

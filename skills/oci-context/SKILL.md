@@ -39,6 +39,5 @@ For agent runs, prefer non-interactive paths. If a command reports `login_requir
 For a compact machine-readable health check:
 
 ```bash
-python3 scripts/oci_remote_workstation.py doctor
+python3 scripts/oci_bassh.py doctor
 ```
-

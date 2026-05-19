@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+
+      - name: Compile Python scripts
+        run: python3 -m py_compile scripts/*.py
+
+      - name: Fake CLI E2E
+        run: python3 scripts/e2e_fake_cli.py
+
+      - name: Install released oci-context
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/adrianmross/oci-context/main/install.sh -o /tmp/install-oci-context.sh
+          PREFIX="$RUNNER_TEMP/oci-tools" VERSION=latest bash /tmp/install-oci-context.sh
+
+      - name: Install released bastion-session
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/adrianmross/bastion-session/main/install.sh -o /tmp/install-bastion-session.sh
+          PREFIX="$RUNNER_TEMP/oci-tools" VERSION=latest bash /tmp/install-bastion-session.sh
+
+      - name: Real binary E2E
+        env:
+          OCI_CONTEXT_BIN: ${{ runner.temp }}/oci-tools/bin/oci-context
+          BASTION_SESSION_BIN: ${{ runner.temp }}/oci-tools/bin/bastion-session
+        run: python3 scripts/e2e_real_binaries.py

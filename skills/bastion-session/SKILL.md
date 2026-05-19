@@ -1,11 +1,11 @@
 ---
 name: bastion-session
-description: Use when creating, refreshing, diagnosing, or connecting through OCI Bastion managed SSH sessions with the `bastion-session` CLI, including tracked VM targets such as vmordws02.
+description: Use when creating, refreshing, diagnosing, or connecting through OCI Bastion managed SSH sessions with the `bastion-session` CLI, including tracked OCI compute hosts such as vmordws02.
 ---
 
 # Bastion Session
 
-Use this skill for OCI Bastion managed SSH access. Prefer VM-facing targets over internal bastion aliases.
+Use this skill for OCI Bastion managed SSH access. Prefer compute-host-facing targets over internal bastion aliases.
 
 ## Preferred Workflow
 
@@ -26,7 +26,7 @@ Use this skill for OCI Bastion managed SSH access. Prefer VM-facing targets over
    bastion-session ssh-config show <host> -o json
    ```
 
-Use `ssh <host>` for the actual workstation connection. The generated `PROFILE-bastion` host is an internal ProxyJump endpoint, not the user-facing VM target.
+Use `ssh <host>` for the actual compute host connection. The generated `PROFILE-bastion` host is an internal ProxyJump endpoint, not the user-facing host target.
 
 ## Tracking a Target
 
@@ -52,6 +52,5 @@ bastion-session target track <host> \
 For an end-to-end ensure operation with one JSON result:
 
 ```bash
-python3 scripts/oci_remote_workstation.py ensure-target <host>
+python3 scripts/oci_bassh.py ensure-target <host>
 ```
-

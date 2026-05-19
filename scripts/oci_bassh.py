@@ -104,7 +104,7 @@ def contract_check(_args):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="OCI remote workstation helper")
+    parser = argparse.ArgumentParser(description="OCI Bastion SSH helper")
     sub = parser.add_subparsers(dest="command", required=True)
 
     p = sub.add_parser("doctor")
@@ -135,4 +135,3 @@ def main():
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
