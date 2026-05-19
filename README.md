@@ -178,20 +178,19 @@ oci-bassh completion fish > ~/.config/fish/completions/oci-bassh.fish
 ```bash
 go test ./...
 go vet ./...
-python3 -m py_compile scripts/*.py
 go build ./cmd/oci-bassh
-python3 scripts/e2e_fake_cli.py
-python3 scripts/e2e_real_binaries.py
+go test -tags=e2e ./...
 ```
 
-`e2e_real_binaries.py` uses fake `oci` and `ssh` shims while exercising real
-`oci-context` and `bastion-session` binaries. Override the binaries with:
+The default Go test suite includes strict hermetic command-contract coverage.
+The `e2e` tagged tests use fake `oci` and `ssh` shims while exercising real
+`oci-context` and `bastion-session` binaries. Override those binaries with:
 
 ```bash
 OCI_CONTEXT_BIN=/path/to/oci-context \
 BASTION_SESSION_BIN=/path/to/bastion-session \
-python3 scripts/e2e_real_binaries.py
+go test -tags=e2e ./...
 ```
 
-JSON schema files live under `schemas/`. The E2E scripts validate top-level
+JSON schema files live under `schemas/`. The Go tests validate top-level
 compatibility for the public command contract.
