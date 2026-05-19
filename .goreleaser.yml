@@ -1,10 +1,34 @@
 version: 2
 
-project_name: oci-bassh
+project_name: oci-hop
 
 builds:
+  - id: oci-hop
+    main: ./cmd/oci-hop
+    binary: oci-hop
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+  - id: hop
+    main: ./cmd/oci-hop
+    binary: hop
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
   - id: oci-bassh
-    main: ./cmd/oci-bassh
+    main: ./cmd/oci-hop
     binary: oci-bassh
     env:
       - CGO_ENABLED=0
@@ -18,6 +42,10 @@ builds:
 
 archives:
   - id: default
+    builds:
+      - oci-hop
+      - hop
+      - oci-bassh
     formats: ["tar.gz"]
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 

@@ -1,7 +1,7 @@
 .PHONY: build test e2e
 
 build:
-	go build ./cmd/oci-bassh
+	go build -o oci-hop ./cmd/oci-hop
 
 test:
 	go test ./...

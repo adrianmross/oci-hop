@@ -1,14 +1,14 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "oci-bassh ssh dry-run",
+  "title": "oci-hop ssh dry-run",
   "type": "object",
   "required": ["ok", "host", "auth", "ensure", "ssh_command"],
   "properties": {
     "ok": {"type": "boolean"},
     "host": {"type": "string"},
     "issue": {"type": "object"},
-    "auth": {"$ref": "oci-bassh-command-result.schema.json"},
-    "ensure": {"$ref": "oci-bassh-command-result.schema.json"},
+    "auth": {"$ref": "oci-hop-command-result.schema.json"},
+    "ensure": {"$ref": "oci-hop-command-result.schema.json"},
     "ssh_command": {"type": "array", "items": {"type": "string"}}
   }
 }

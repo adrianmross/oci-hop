@@ -5,7 +5,7 @@ repo="adrianmross/oci-bassh"
 prefix="${PREFIX:-/usr/local}"
 bin_dir="${prefix}/bin"
 version="${VERSION:-latest}"
-tool="oci-bassh"
+tool="oci-hop"
 
 require_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -53,5 +53,9 @@ if [[ "${expected_checksum}" != "${actual_checksum}" ]]; then
 fi
 tar -xzf "${tmp_dir}/${asset}" -C "${tmp_dir}"
 install -d "${bin_dir}"
-install "${tmp_dir}/${tool}" "${bin_dir}/${tool}"
-echo "Installed ${tool} to ${bin_dir}/${tool}"
+for binary in oci-hop hop oci-bassh; do
+  if [[ -x "${tmp_dir}/${binary}" ]]; then
+    install "${tmp_dir}/${binary}" "${bin_dir}/${binary}"
+    echo "Installed ${binary} to ${bin_dir}/${binary}"
+  fi
+done

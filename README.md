@@ -1,13 +1,14 @@
-# OCI Bassh
+# OCI Bastion Hopper
 
-SSH to OCI compute hosts through OCI Bastion without making the operator think
-about sessions, OCIDs, or temporary bastion hostnames.
+Prepare SSH access to OCI compute hosts through OCI Bastion without making the
+operator think about sessions, OCIDs, or temporary bastion hostnames.
 
-![OCI Bassh terminal demo](docs/assets/oci-bassh-demo.gif)
+![OCI Bastion Hopper terminal demo](docs/assets/oci-hop-demo.gif)
 
-`oci-bassh` is the small front-door CLI for the OCI SSH workflow:
+`hop` is the small front-door CLI for the OCI SSH workflow:
 
-- explain why `ssh <host>` will or will not work
+- prepare `ssh <host>` without opening a shell session
+- explain why a host-facing SSH route will or will not work
 - track a compute instance from Terraform outputs
 - create or renew the OCI Bastion managed SSH session
 - write the VM-facing SSH config so the final command is still `ssh <host>`
@@ -18,7 +19,7 @@ operator-friendly Cobra command surface.
 
 ## Agent Support
 
-`oci-bassh` is designed for shell-driven automation. Commands expose stable JSON
+`hop` is designed for shell-driven automation. Commands expose stable JSON
 output, predictable exit codes, and machine-readable envelopes that agents can
 use without parsing terminal text.
 
@@ -38,12 +39,14 @@ Homebrew is the preferred install path:
 
 ```bash
 brew tap adrianmross/tap
-brew install oci-bassh
+brew install oci-hop
 ```
 
-The Homebrew binary is installed at:
+Homebrew installs the primary commands and a compatibility command:
 
 ```bash
+/opt/homebrew/bin/hop
+/opt/homebrew/bin/oci-hop
 /opt/homebrew/bin/oci-bassh
 ```
 
@@ -65,19 +68,25 @@ PREFIX="$HOME/.local" curl -sSL https://raw.githubusercontent.com/adrianmross/oc
 Check local dependencies and context:
 
 ```bash
-oci-bassh doctor
+hop doctor
 ```
 
 Explain the host-facing SSH path:
 
 ```bash
-oci-bassh explain my-vps-01
+hop explain my-vps-01
 ```
 
-Create or reuse the bastion session and update SSH config:
+Create or reuse the bastion session, update SSH config, and stop before SSH:
 
 ```bash
-oci-bassh ensure my-vps-01
+hop my-vps-01
+```
+
+Successful preparation prints a compact status line:
+
+```text
+ready  my-vps-01  10.0.1.25  via my-bastion
 ```
 
 Connect to the compute instance, not to the bastion alias:
@@ -91,7 +100,7 @@ ssh my-vps-01
 The durable target is the compute host alias you already type, such as
 `my-vps-01`.
 
-`oci-bassh` keeps the internal bastion jump host fresh, but the operator-facing
+`hop` keeps the internal bastion jump host fresh, but the operator-facing
 target remains:
 
 ```sshconfig
@@ -107,26 +116,34 @@ on the compute instance.
 ## Common Commands
 
 ```bash
-oci-bassh doctor
-oci-bassh check
-oci-bassh inspect my-vps-01
-oci-bassh explain my-vps-01
-oci-bassh repair --ensure my-vps-01
-oci-bassh track my-vps-01 ./tf
-oci-bassh ensure my-vps-01
-oci-bassh ssh --dry-run my-vps-01
-oci-bassh paths -o json
-oci-bassh version -o json
-oci-bassh upgrade
-oci-bassh contract-check
+hop my-vps-01
+hop doctor
+hop check
+hop inspect my-vps-01
+hop explain my-vps-01
+hop repair --ensure my-vps-01
+hop track my-vps-01 ./tf
+hop ensure my-vps-01
+hop ssh --dry-run my-vps-01
+hop paths -o json
+hop version -o json
+hop upgrade
+hop contract-check
 ```
 
-The longer aliases remain available when the caller wants names that describe
-the underlying operation exactly:
+The qualified command and old compatibility command run the same CLI:
 
 ```bash
-oci-bassh track-from-terraform my-vps-01 ./tf
-oci-bassh ensure-target my-vps-01
+oci-hop my-vps-01
+oci-bassh my-vps-01
+```
+
+Longer aliases remain available when the caller wants names that describe the
+underlying operation exactly:
+
+```bash
+hop track-from-terraform my-vps-01 ./tf
+hop ensure-target my-vps-01
 ```
 
 ## Paths
@@ -134,13 +151,14 @@ oci-bassh ensure-target my-vps-01
 Use `paths` when scripts or agents need to know where local state lives:
 
 ```bash
-oci-bassh paths -o json
+hop paths -o json
 ```
 
 Typical paths:
 
-- Homebrew binary: `/opt/homebrew/bin/oci-bassh`
-- Source install binary: `/usr/local/bin/oci-bassh`
+- Homebrew binaries: `/opt/homebrew/bin/hop`, `/opt/homebrew/bin/oci-hop`
+- Compatibility binary: `/opt/homebrew/bin/oci-bassh`
+- Source install binaries: `/usr/local/bin/hop`, `/usr/local/bin/oci-hop`
 - SSH include: `~/.ssh/config.d/bastion-session`
 - Bastion session cache: `~/.cache/bastion-session/state.json`
 - Tracked targets: `~/.cache/bastion-session/tracked-targets.json`
@@ -166,7 +184,7 @@ returns non-zero when dependencies are unhealthy.
 bastion-session explain <host> -o json
 ```
 
-and returns the downstream result inside the stable `oci-bassh` envelope.
+and returns the downstream result inside the stable `oci-hop` envelope.
 
 For ordinary inspection, the skills prefer:
 
@@ -181,12 +199,12 @@ environment settings or a context handoff.
 
 ## Shell Completions
 
-`oci-bassh` is built with Cobra and can generate completions:
+`hop` is built with Cobra and can generate completions:
 
 ```bash
-oci-bassh completion zsh > "${fpath[1]}/_oci-bassh"
-oci-bassh completion bash > /usr/local/etc/bash_completion.d/oci-bassh
-oci-bassh completion fish > ~/.config/fish/completions/oci-bassh.fish
+hop completion zsh > "${fpath[1]}/_hop"
+hop completion bash > /usr/local/etc/bash_completion.d/hop
+hop completion fish > ~/.config/fish/completions/hop.fish
 ```
 
 ## Development
@@ -194,7 +212,7 @@ oci-bassh completion fish > ~/.config/fish/completions/oci-bassh.fish
 ```bash
 go test ./...
 go vet ./...
-go build ./cmd/oci-bassh
+go build ./cmd/oci-hop
 go test -tags=e2e ./...
 ```
 

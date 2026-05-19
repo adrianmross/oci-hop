@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Rename the product to OCI Bastion Hopper with `hop` and `oci-hop` primary commands.
+- Keep `oci-bassh` as a compatibility binary for existing scripts.
+- Add `hop <host>` as the safe default host action: prepare the route and stop before SSH.
 - Add tolerant `doctor` diagnostics and strict `check` health gates.
 - Add `inspect` for cached/no-live host inspection and `repair` for fix flows.
 - Add CLI version aggregation, shell completions, and `track --terraform-dir`.

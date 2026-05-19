@@ -1,4 +1,4 @@
-Output docs/assets/oci-bassh-demo.gif
+Output docs/assets/oci-hop-demo.gif
 
 Require bash
 
@@ -26,12 +26,12 @@ Enter
 Show
 
 Sleep 700ms
-Type "oci-bassh explain my-vps-01"
+Type "hop explain my-vps-01"
 Enter
 Sleep 1400ms
-Type "oci-bassh ensure my-vps-01"
+Type "hop my-vps-01"
 Enter
 Sleep 1200ms
-Type "ssh my-vps-01"
+Type "hop paths -o json"
 Enter
 Sleep 1800ms

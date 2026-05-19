@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "oci-hop explain",
+  "type": "object",
+  "required": ["ok", "host", "explain"],
+  "properties": {
+    "ok": {"type": "boolean"},
+    "host": {"type": "string"},
+    "issue": {"type": "object"},
+    "explain": {"$ref": "oci-hop-command-result.schema.json"}
+  }
+}

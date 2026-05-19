@@ -14,6 +14,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	primaryCommand   = "hop"
+	qualifiedCommand = "oci-hop"
+	compatCommand    = "oci-bassh"
+)
+
 var (
 	version = "dev"
 	commit  = "none"
@@ -46,30 +52,95 @@ func main() {
 }
 
 func run(args []string) error {
+	if host, identityFile, output, handled, err := parseRootHopArgs(args); handled || err != nil {
+		if err != nil {
+			return err
+		}
+		return cmdHop(host, identityFile, output)
+	}
 	root := newRootCommand(os.Stdout, os.Stderr)
 	root.SetArgs(args)
 	return root.Execute()
+}
+
+func parseRootHopArgs(args []string) (host, identityFile, output string, handled bool, err error) {
+	output = "text"
+	remaining := []string{}
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		switch {
+		case arg == "--":
+			remaining = append(remaining, args[i+1:]...)
+			i = len(args)
+		case arg == "-h" || arg == "--help" || arg == "--version" || arg == "--json" || arg == "-v" || arg == "--verbose-version":
+			return "", "", "", false, nil
+		case arg == "-o" || arg == "--output":
+			i++
+			if i >= len(args) {
+				return "", "", "", true, cliError{code: 2, msg: arg + " requires a value"}
+			}
+			output = args[i]
+		case strings.HasPrefix(arg, "--output="):
+			output = strings.TrimPrefix(arg, "--output=")
+		case arg == "--identity-file":
+			i++
+			if i >= len(args) {
+				return "", "", "", true, cliError{code: 2, msg: "--identity-file requires a value"}
+			}
+			identityFile = args[i]
+		case strings.HasPrefix(arg, "--identity-file="):
+			identityFile = strings.TrimPrefix(arg, "--identity-file=")
+		case strings.HasPrefix(arg, "-"):
+			return "", "", "", false, nil
+		default:
+			remaining = append(remaining, arg)
+		}
+	}
+	if len(remaining) == 0 {
+		return "", "", "", false, nil
+	}
+	if knownRootCommand(remaining[0]) {
+		return "", "", "", false, nil
+	}
+	if len(remaining) > 1 {
+		return "", "", "", true, cliError{code: 2, msg: "unknown command or too many arguments: " + strings.Join(remaining, " ")}
+	}
+	return remaining[0], identityFile, output, true, nil
+}
+
+func knownRootCommand(name string) bool {
+	switch name {
+	case "doctor", "check", "inspect", "repair", "ensure", "ensure-target", "track", "track-from-terraform", "ssh", "explain", "paths", "upgrade", "version", "completion", "contract-check", "help":
+		return true
+	default:
+		return false
+	}
 }
 
 func newRootCommand(stdout, stderr io.Writer) *cobra.Command {
 	var rootVersion bool
 	var rootJSON bool
 	var versionCount int
+	var rootOutput string
+	var rootIdentityFile string
 	root := &cobra.Command{
-		Use:           "oci-bassh",
-		Short:         "Manage SSH to OCI compute hosts through OCI Bastion",
+		Use:           commandName(),
+		Short:         "Prepare SSH access to OCI compute hosts through OCI Bastion",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) > 0 {
-				return cliError{code: 2, msg: "unknown command: " + args[0]}
-			}
 			if rootVersion || rootJSON || versionCount > 0 {
 				format := "text"
 				if rootJSON {
 					format = "json"
 				}
 				return emitVersion(format, versionCount > 1)
+			}
+			if len(args) == 1 {
+				return cmdHop(args[0], rootIdentityFile, rootOutput)
+			}
+			if len(args) > 1 {
+				return cliError{code: 2, msg: "unknown command or too many arguments: " + strings.Join(args, " ")}
 			}
 			return cmd.Help()
 		},
@@ -79,6 +150,10 @@ func newRootCommand(stdout, stderr io.Writer) *cobra.Command {
 	root.Flags().BoolVar(&rootVersion, "version", false, "print version and exit")
 	root.Flags().BoolVar(&rootJSON, "json", false, "with --version, print JSON version details")
 	root.Flags().CountVarP(&versionCount, "verbose-version", "v", "print version; repeat for commit and date")
+	root.Flags().StringVarP(&rootOutput, "output", "o", "text", "output format for <host>: text or json")
+	root.Flags().StringVar(&rootIdentityFile, "identity-file", "", "SSH identity file to pass to bastion-session for <host>")
+	_ = root.RegisterFlagCompletionFunc("output", outputFormatCompletion)
+	_ = root.RegisterFlagCompletionFunc("identity-file", fileCompletion)
 
 	root.AddCommand(
 		newDoctorCommand(),
@@ -98,6 +173,16 @@ func newRootCommand(stdout, stderr io.Writer) *cobra.Command {
 		newContractCheckCommand(),
 	)
 	return root
+}
+
+func commandName() string {
+	name := filepath.Base(os.Args[0])
+	switch name {
+	case primaryCommand, qualifiedCommand, compatCommand:
+		return name
+	default:
+		return primaryCommand
+	}
 }
 
 func newDoctorCommand() *cobra.Command {
@@ -254,7 +339,7 @@ func newPathsCommand() *cobra.Command {
 	format := "text"
 	cmd := &cobra.Command{
 		Use:   "paths",
-		Short: "Print local paths used by oci-bassh",
+		Short: "Print local paths used by OCI Bastion Hopper",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return cmdPaths(format)
@@ -287,7 +372,7 @@ func newVersionCommand() *cobra.Command {
 	format := "text"
 	cmd := &cobra.Command{
 		Use:   "version",
-		Short: "Print oci-bassh version",
+		Short: "Print OCI Bastion Hopper version",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if jsonFlag, _ := cmd.Flags().GetBool("json"); jsonFlag {
@@ -360,6 +445,49 @@ func cmdCheck(args []string) error {
 	return nil
 }
 
+func cmdHop(host, identityFile, format string) error {
+	host = strings.TrimSpace(host)
+	if host == "" {
+		return cliError{code: 2, msg: "host is required"}
+	}
+	auth := runJSON("oci-context", "auth", "ensure", "--output", "json")
+	ensureArgs := []string{"ensure", host, "-o", "json"}
+	if identityFile != "" {
+		ensureArgs = append(ensureArgs, "--identity-file", identityFile)
+	}
+	ensured := runJSON("bastion-session", ensureArgs...)
+	sshConfig := runJSON("bastion-session", "ssh-config", "show", host, "-o", "json")
+	ok := auth.OK && ensured.OK && sshConfig.OK
+	out := map[string]any{
+		"ok":         ok,
+		"host":       host,
+		"auth":       auth,
+		"ensure":     ensured,
+		"ssh_config": sshConfig,
+	}
+	if !ok {
+		out["issue"] = firstIssue("hop failed", nextForHost(commandName()+" repair --ensure", host), auth, ensured, sshConfig)
+	}
+	switch format {
+	case "json":
+		if err := emit(out); err != nil {
+			return err
+		}
+	case "text", "":
+		if ok {
+			fmt.Fprintln(os.Stdout, compactReadyLine(host, ensured, sshConfig))
+		} else if err := emit(out); err != nil {
+			return err
+		}
+	default:
+		return cliError{code: 2, msg: "output must be json or text"}
+	}
+	if !ok {
+		return cliError{code: 1, msg: "hop failed"}
+	}
+	return nil
+}
+
 func doctorPayload(host string) map[string]any {
 	tools := map[string]string{}
 	for _, name := range []string{"oci-context", "bastion-session", "ssh"} {
@@ -386,7 +514,7 @@ func doctorPayload(host string) map[string]any {
 		"targets":        targets,
 	}
 	if !ok {
-		out["issue"] = firstIssue("doctor found issues", nextForHost("oci-bassh repair", host), oci, bastion, targets)
+		out["issue"] = firstIssue("doctor found issues", nextForHost(commandName()+" repair", host), oci, bastion, targets)
 	}
 	return out
 }
@@ -413,7 +541,7 @@ func cmdInspect(args []string) error {
 		"ssh_effective":  sshEffective,
 	}
 	if !ok {
-		out["issue"] = firstIssue("inspect found issues", nextForHost("oci-bassh repair", host), status, auth, bastion, sshConfig, sshEffective)
+		out["issue"] = firstIssue("inspect found issues", nextForHost(commandName()+" repair", host), status, auth, bastion, sshConfig, sshEffective)
 	}
 	return emit(out)
 }
@@ -452,11 +580,11 @@ func cmdRepair(args []string) error {
 		out["ensure"] = ensured
 		out["ssh_config"] = sshConfig
 		if !repaired.OK {
-			out["repair_issue"] = firstIssue("repair found remaining issues", nextForHost("oci-bassh inspect", host), repaired)
+			out["repair_issue"] = firstIssue("repair found remaining issues", nextForHost(commandName()+" inspect", host), repaired)
 		}
 	}
 	if !ok {
-		out["issue"] = firstIssue("repair failed", nextForHost("oci-bassh inspect", host), auth, ensured, sshConfig, repaired)
+		out["issue"] = firstIssue("repair failed", nextForHost(commandName()+" inspect", host), auth, ensured, sshConfig, repaired)
 	}
 	if err := emit(out); err != nil {
 		return err
@@ -490,7 +618,7 @@ func cmdEnsure(args []string) error {
 		"connect_command": connectCommand,
 	}
 	if !ok {
-		out["issue"] = firstIssue("ensure failed", nextForHost("oci-bassh repair --ensure", host), auth, ensured, sshConfig)
+		out["issue"] = firstIssue("ensure failed", nextForHost(commandName()+" repair --ensure", host), auth, ensured, sshConfig)
 	}
 	if err := emit(out); err != nil {
 		return err
@@ -513,7 +641,7 @@ func cmdTrack(args []string) error {
 	ok := tracked.OK && shown.OK
 	out := map[string]any{"ok": ok, "host": host, "track": tracked, "target": shown}
 	if !ok {
-		out["issue"] = firstIssue("track failed", nextForHost("oci-bassh inspect", host), tracked, shown)
+		out["issue"] = firstIssue("track failed", nextForHost(commandName()+" inspect", host), tracked, shown)
 	}
 	if err := emit(out); err != nil {
 		return err
@@ -540,7 +668,7 @@ func cmdSSH(args []string) error {
 	if dryRun {
 		out := map[string]any{"ok": ok, "host": host, "auth": auth, "ensure": ensured, "ssh_command": sshCmd}
 		if !ok {
-			out["issue"] = firstIssue("ssh preparation failed", nextForHost("oci-bassh repair --ensure", host), auth, ensured)
+			out["issue"] = firstIssue("ssh preparation failed", nextForHost(commandName()+" repair --ensure", host), auth, ensured)
 		}
 		if err := emit(out); err != nil {
 			return err
@@ -551,7 +679,7 @@ func cmdSSH(args []string) error {
 		return nil
 	}
 	if !ok {
-		out := map[string]any{"ok": false, "host": host, "auth": auth, "ensure": ensured, "ssh_command": sshCmd, "issue": firstIssue("ssh preparation failed", nextForHost("oci-bassh repair --ensure", host), auth, ensured)}
+		out := map[string]any{"ok": false, "host": host, "auth": auth, "ensure": ensured, "ssh_command": sshCmd, "issue": firstIssue("ssh preparation failed", nextForHost(commandName()+" repair --ensure", host), auth, ensured)}
 		if err := emit(out); err != nil {
 			return err
 		}
@@ -569,7 +697,7 @@ func cmdExplain(args []string) error {
 	ok := explained.OK
 	out := map[string]any{"ok": ok, "host": host, "explain": explained}
 	if !ok {
-		out["issue"] = firstIssue("explain failed", nextForHost("oci-bassh inspect", host), explained)
+		out["issue"] = firstIssue("explain failed", nextForHost(commandName()+" inspect", host), explained)
 	}
 	if err := emit(out); err != nil {
 		return err
@@ -586,7 +714,7 @@ func cmdPaths(format string) error {
 	case "json":
 		return emit(payload)
 	case "text", "":
-		for _, key := range []string{"executable", "home", "oci_context_config", "oci_config", "ssh_config", "ssh_dir", "bastion_cache", "install_script"} {
+		for _, key := range []string{"executable", "hop_binary", "qualified_binary", "compat_binary", "home", "oci_context_config", "oci_config", "ssh_config", "ssh_dir", "bastion_cache", "install_script"} {
 			fmt.Fprintf(os.Stdout, "%s=%s\n", key, payload["paths"].(map[string]string)[key])
 		}
 		return nil
@@ -629,7 +757,7 @@ func cmdUpgrade(runInstaller bool, prefix, releaseVersion string) error {
 		"stderr":    stderr.String(),
 	}
 	if !ok {
-		out["issue"] = issue{ErrorCode: "upgrade_failed", Message: strings.TrimSpace(stderr.String()), NextCommand: "oci-bassh upgrade"}
+		out["issue"] = issue{ErrorCode: "upgrade_failed", Message: strings.TrimSpace(stderr.String()), NextCommand: commandName() + " upgrade"}
 	}
 	if err := emit(out); err != nil {
 		return err
@@ -722,6 +850,42 @@ func runCommand(name string, args ...string) commandResult {
 		raw = &cp
 	}
 	return commandResult{Command: cmdArgs, OK: err == nil, ExitCode: rc, Stdout: stdout.String(), Stderr: stderr.String(), ErrorCode: errorCode, Message: message, JSON: raw}
+}
+
+func compactReadyLine(host string, ensured, sshConfig commandResult) string {
+	fields := []string{"ready", host}
+	if privateIP := stringFieldFromJSON(ensured, "target_private_ip"); privateIP != "" {
+		fields = append(fields, privateIP)
+	} else if hostname := stringFieldFromJSON(sshConfig, "hostname"); hostname != "" {
+		fields = append(fields, hostname)
+	}
+	if proxyJump := firstStringFieldFromJSON(sshConfig, "proxyjump", "proxy_jump"); proxyJump != "" {
+		fields = append(fields, "via "+proxyJump)
+	} else if proxyJump := firstStringFieldFromJSON(ensured, "proxyjump", "proxy_jump"); proxyJump != "" {
+		fields = append(fields, "via "+proxyJump)
+	}
+	return strings.Join(fields, "  ")
+}
+
+func firstStringFieldFromJSON(result commandResult, keys ...string) string {
+	for _, key := range keys {
+		if value := stringFieldFromJSON(result, key); value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func stringFieldFromJSON(result commandResult, key string) string {
+	if result.JSON == nil {
+		return ""
+	}
+	var obj map[string]any
+	if json.Unmarshal(*result.JSON, &obj) != nil {
+		return ""
+	}
+	value, _ := obj[key].(string)
+	return value
 }
 
 func emit(v any) error {
@@ -891,7 +1055,7 @@ func connectCommandFrom(host string, result commandResult) string {
 
 func versions() map[string]commandResult {
 	return map[string]commandResult{
-		"oci_bassh":       {Command: []string{"oci-bassh", "--version"}, OK: true, ExitCode: 0, Stdout: version + "\n"},
+		"oci_hop":         {Command: []string{commandName(), "--version"}, OK: true, ExitCode: 0, Stdout: version + "\n"},
 		"oci_context":     runCommand("oci-context", "--version"),
 		"bastion_session": runCommand("bastion-session", "--version"),
 		"ssh":             runCommand("ssh", "-V"),
@@ -935,6 +1099,9 @@ func pathsPayload() map[string]any {
 	}
 	paths := map[string]string{
 		"executable":         exe,
+		"hop_binary":         filepath.Join("/opt/homebrew", "bin", primaryCommand),
+		"qualified_binary":   filepath.Join("/opt/homebrew", "bin", qualifiedCommand),
+		"compat_binary":      filepath.Join("/opt/homebrew", "bin", compatCommand),
 		"home":               home,
 		"oci_context_config": filepath.Join(home, ".oci-context", "config.yml"),
 		"oci_config":         filepath.Join(home, ".oci", "config"),

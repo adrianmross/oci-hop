@@ -1,6 +1,6 @@
 # Generic Agent Guide
 
-Use `oci-bassh` when an agent needs to inspect, repair, or establish SSH access
+Use `hop` when an agent needs to inspect, repair, or prepare SSH access
 to an OCI compute host through OCI Bastion.
 
 ## Contract
@@ -14,16 +14,17 @@ to an OCI compute host through OCI Bastion.
 ## Preferred Commands
 
 ```bash
-oci-bassh doctor
-oci-bassh check
-oci-bassh inspect <host>
-oci-bassh explain <host>
-oci-bassh repair --ensure <host>
-oci-bassh ensure <host>
-oci-bassh ssh --dry-run <host>
-oci-bassh paths -o json
-oci-bassh version -o json
-oci-bassh contract-check
+hop <host>
+hop doctor
+hop check
+hop inspect <host>
+hop explain <host>
+hop repair --ensure <host>
+hop ensure <host>
+hop ssh --dry-run <host>
+hop paths -o json
+hop version -o json
+hop contract-check
 ```
 
 Use lower-level commands when a task specifically asks for `oci-context` or

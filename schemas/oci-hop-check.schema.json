@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "oci-bassh check",
+  "title": "oci-hop check",
   "type": "object",
   "required": ["ok", "tools", "versions", "oci_context", "bastion_doctor", "targets"],
   "properties": {
@@ -9,8 +9,8 @@
     "tools": {"type": "object"},
     "versions": {"type": "object"},
     "issue": {"type": "object"},
-    "oci_context": {"$ref": "oci-bassh-command-result.schema.json"},
-    "bastion_doctor": {"$ref": "oci-bassh-command-result.schema.json"},
-    "targets": {"$ref": "oci-bassh-command-result.schema.json"}
+    "oci_context": {"$ref": "oci-hop-command-result.schema.json"},
+    "bastion_doctor": {"$ref": "oci-hop-command-result.schema.json"},
+    "targets": {"$ref": "oci-hop-command-result.schema.json"}
   }
 }

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "oci-bassh upgrade",
+  "title": "oci-hop upgrade",
   "type": "object",
   "required": ["ok", "dry_run", "command"],
   "properties": {
