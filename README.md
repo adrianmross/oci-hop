@@ -18,19 +18,19 @@ operator-friendly Cobra command surface.
 
 ## Agent Support
 
-`oci-bassh` is agent-ready, not Codex-only. The CLI exposes stable JSON output,
-predictable exit codes, and machine-readable envelopes for automation.
+`oci-bassh` is designed for shell-driven automation. Commands expose stable JSON
+output, predictable exit codes, and machine-readable envelopes that agents can
+use without parsing terminal text.
 
-Portable agent guidance lives in:
+Reusable agent guidance lives in:
 
 - `skills/`: runtime-neutral workflow instructions for `oci-context` and
   `bastion-session`
 - `agents/`: adapter metadata and quick prompts for different agent runtimes
 - `.codex-plugin/`: Codex packaging for the same portable skills
 
-The Codex plugin is one distribution adapter. The command contracts and skills
-are intended to be reusable by any agent that can run shell commands and read
-JSON.
+The command contracts and skills are intended for tools that can run shell
+commands and read JSON.
 
 ## Install
 
