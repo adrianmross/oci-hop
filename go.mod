@@ -1,4 +1,4 @@
-module github.com/adrianmross/oci-bassh
+module github.com/adrianmross/oci-hop
 
 go 1.24.0
 
