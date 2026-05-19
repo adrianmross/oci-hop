@@ -7,12 +7,11 @@
     "ok": {"type": "boolean"},
     "paths": {
       "type": "object",
-      "required": ["executable", "hop_binary", "qualified_binary", "compat_binary", "home", "oci_context_config", "oci_config", "ssh_config", "ssh_dir", "bastion_cache", "install_script"],
+      "required": ["executable", "hop_binary", "qualified_binary", "home", "oci_context_config", "oci_config", "ssh_config", "ssh_dir", "bastion_cache", "install_script"],
       "properties": {
         "executable": {"type": "string"},
         "hop_binary": {"type": "string"},
         "qualified_binary": {"type": "string"},
-        "compat_binary": {"type": "string"},
         "home": {"type": "string"},
         "oci_context_config": {"type": "string"},
         "oci_config": {"type": "string"},

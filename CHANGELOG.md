@@ -2,8 +2,9 @@
 
 ## Unreleased
 
+- Remove the `oci-bassh` compatibility binary from releases, source install, and Homebrew packaging.
+- Simplify the README around install, quickstart, and help; move automation contract notes to `AGENTS.md`.
 - Rename the product to OCI Bastion Hopper with `hop` and `oci-hop` primary commands.
-- Keep `oci-bassh` as a compatibility binary for existing scripts.
 - Add `hop <host>` as the safe default host action: prepare the route and stop before SSH.
 - Add tolerant `doctor` diagnostics and strict `check` health gates.
 - Add `inspect` for cached/no-live host inspection and `repair` for fix flows.

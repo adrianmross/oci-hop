@@ -111,17 +111,15 @@ func TestHermeticCLIContract(t *testing.T) {
 		}
 	}
 
-	for _, name := range []string{"hop", "oci-bassh"} {
-		link := filepath.Join(tmp, name)
-		if err := os.Symlink(binary, link); err != nil {
-			t.Fatal(err)
-		}
-		run := runCommandForTest(t, []string{link, "version", "-o", "json"}, env)
-		if run.code != 0 {
-			t.Fatalf("%s compatibility command failed with %d\nstdout:\n%s\nstderr:\n%s", name, run.code, run.stdout, run.stderr)
-		}
-		assertRequiredKeys(t, "oci-hop-version.schema.json", decodeObject(t, run.stdout))
+	link := filepath.Join(tmp, "hop")
+	if err := os.Symlink(binary, link); err != nil {
+		t.Fatal(err)
 	}
+	run := runCommandForTest(t, []string{link, "version", "-o", "json"}, env)
+	if run.code != 0 {
+		t.Fatalf("hop command failed with %d\nstdout:\n%s\nstderr:\n%s", run.code, run.stdout, run.stderr)
+	}
+	assertRequiredKeys(t, "oci-hop-version.schema.json", decodeObject(t, run.stdout))
 
 	failEnv := append([]string{}, env...)
 	failEnv = append(failEnv, "BASTION_SESSION_FAIL_DOCTOR=1")

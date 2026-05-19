@@ -17,7 +17,6 @@ import (
 const (
 	primaryCommand   = "hop"
 	qualifiedCommand = "oci-hop"
-	compatCommand    = "oci-bassh"
 )
 
 var (
@@ -178,7 +177,7 @@ func newRootCommand(stdout, stderr io.Writer) *cobra.Command {
 func commandName() string {
 	name := filepath.Base(os.Args[0])
 	switch name {
-	case primaryCommand, qualifiedCommand, compatCommand:
+	case primaryCommand, qualifiedCommand:
 		return name
 	default:
 		return primaryCommand
@@ -714,7 +713,7 @@ func cmdPaths(format string) error {
 	case "json":
 		return emit(payload)
 	case "text", "":
-		for _, key := range []string{"executable", "hop_binary", "qualified_binary", "compat_binary", "home", "oci_context_config", "oci_config", "ssh_config", "ssh_dir", "bastion_cache", "install_script"} {
+		for _, key := range []string{"executable", "hop_binary", "qualified_binary", "home", "oci_context_config", "oci_config", "ssh_config", "ssh_dir", "bastion_cache", "install_script"} {
 			fmt.Fprintf(os.Stdout, "%s=%s\n", key, payload["paths"].(map[string]string)[key])
 		}
 		return nil
@@ -1101,7 +1100,6 @@ func pathsPayload() map[string]any {
 		"executable":         exe,
 		"hop_binary":         filepath.Join("/opt/homebrew", "bin", primaryCommand),
 		"qualified_binary":   filepath.Join("/opt/homebrew", "bin", qualifiedCommand),
-		"compat_binary":      filepath.Join("/opt/homebrew", "bin", compatCommand),
 		"home":               home,
 		"oci_context_config": filepath.Join(home, ".oci-context", "config.yml"),
 		"oci_config":         filepath.Join(home, ".oci", "config"),
