@@ -5,12 +5,12 @@ case "${1:-}" in
   explain)
     cat <<'JSON'
 {
-  "host": "vmordws02",
+  "host": "app-server-01",
   "ok": true,
   "ssh_config": {
-    "hostname": "10.42.1.217",
-    "user": "opc",
-    "proxyjump": "oabcs1-terraform-bastion"
+    "hostname": "10.0.1.25",
+    "user": "cloud-user",
+    "proxyjump": "dev-bastion"
   }
 }
 JSON
@@ -20,8 +20,8 @@ JSON
 {
   "ok": true,
   "action": "reused_active_session",
-  "ssh_target": "vmordws02",
-  "connect": "ssh vmordws02"
+  "ssh_target": "app-server-01",
+  "connect": "ssh app-server-01"
 }
 JSON
     ;;
