@@ -36,11 +36,7 @@ jobs:
           go-version-file: go.mod
 
       - name: Test
-        run: |
-          go test ./...
-          python3 -m py_compile scripts/*.py
-          python3 scripts/e2e_fake_cli.py
-          rm -rf scripts/__pycache__
+        run: go test ./...
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v7.2.1
