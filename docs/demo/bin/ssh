@@ -9,7 +9,9 @@ fi
 
 cat <<'OUT'
 Last login: Tue May 19 02:12:00 2026
-[cloud-user@my-vps-01 ~]$ hostname
-my-vps-01
-[cloud-user@my-vps-01 ~]$ exit
 OUT
+printf '\033[38;5;81m[cloud-user@my-vps-01 ~]$ \033[0mhostname\n'
+cat <<'OUT'
+my-vps-01
+OUT
+printf '\033[38;5;81m[cloud-user@my-vps-01 ~]$ \033[0mexit\n'
