@@ -29,6 +29,10 @@ REQUIRED = {
     "oci-bassh-track.schema.json": ["ok", "host", "track", "target"],
     "oci-bassh-ssh.schema.json": ["ok", "host", "auth", "ensure", "ssh_command"],
     "oci-bassh-contract-check.schema.json": ["ok", "checks"],
+    "oci-bassh-explain.schema.json": ["ok", "host", "explain"],
+    "oci-bassh-paths.schema.json": ["ok", "paths"],
+    "oci-bassh-upgrade.schema.json": ["ok", "dry_run", "command"],
+    "oci-bassh-version.schema.json": ["ok", "version", "commit", "date"],
 }
 
 
@@ -96,6 +100,8 @@ elif args[:2] == ["target", "show"]:
     print(json.dumps({{"name": args[2], "instance_id": "ocid1.instance", "private_ip": "10.0.0.5"}}))
 elif args[:1] == ["ensure"]:
     print(json.dumps({{"ready": True, "ssh_host": args[1], "connect_command": "ssh " + args[1], "target_private_ip": "10.0.0.5"}}))
+elif args[:1] == ["explain"]:
+    print(json.dumps({{"host": args[1], "target": "10.0.0.5", "proxyjump": "DEFAULT-bastion", "connect_command": "ssh " + args[1]}}))
 elif len(args) >= 3 and args[:2] == ["ssh-config", "show"]:
     print(json.dumps({{"host": args[2], "hostname": "10.0.0.5", "user": "opc", "proxyjump": "DEFAULT-bastion"}}))
 elif args[:1] == ["status"]:
@@ -131,6 +137,12 @@ exit 2
             ("oci-bassh-track.schema.json", helper + ["track", "vmordws02", str(tmp)]),
             ("oci-bassh-track.schema.json", helper + ["track", "vmordws02", "--terraform-dir", str(tmp)]),
             ("oci-bassh-ssh.schema.json", helper + ["ssh", "--dry-run", "vmordws02"]),
+            ("oci-bassh-ssh.schema.json", helper + ["ssh", "--dry-run", "vmordws02", "-p", "2222"]),
+            ("oci-bassh-explain.schema.json", helper + ["explain", "vmordws02"]),
+            ("oci-bassh-paths.schema.json", helper + ["paths", "-o", "json"]),
+            ("oci-bassh-upgrade.schema.json", helper + ["upgrade"]),
+            ("oci-bassh-version.schema.json", helper + ["version", "-o", "json"]),
+            ("oci-bassh-version.schema.json", helper + ["--version", "--json"]),
             ("oci-bassh-contract-check.schema.json", helper + ["contract-check"]),
         ]
         for schema, cmd in checks:

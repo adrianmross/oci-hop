@@ -6,6 +6,8 @@
 - Add `inspect` for cached/no-live host inspection and `repair` for fix flows.
 - Add CLI version aggregation, shell completions, and `track --terraform-dir`.
 - Extend JSON contracts and E2E coverage for diagnostics, repair, and import UX.
+- Migrate the CLI dispatcher to Cobra while preserving JSON command contracts.
+- Add `explain`, `paths`, dry-run-first `upgrade`, JSON version output, and richer generated shell completions.
 
 ## v0.3.0
 

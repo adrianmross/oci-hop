@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "oci-bassh paths",
+  "type": "object",
+  "required": ["ok", "paths"],
+  "properties": {
+    "ok": {"type": "boolean"},
+    "paths": {
+      "type": "object",
+      "required": ["executable", "home", "oci_context_config", "oci_config", "ssh_config", "ssh_dir", "bastion_cache", "install_script"],
+      "properties": {
+        "executable": {"type": "string"},
+        "home": {"type": "string"},
+        "oci_context_config": {"type": "string"},
+        "oci_config": {"type": "string"},
+        "ssh_config": {"type": "string"},
+        "ssh_dir": {"type": "string"},
+        "bastion_cache": {"type": "string"},
+        "install_script": {"type": "string"}
+      }
+    }
+  }
+}

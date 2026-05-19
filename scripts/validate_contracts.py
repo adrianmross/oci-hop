@@ -17,6 +17,10 @@ REQUIRED = {
     "oci-bassh-track.schema.json": ["ok", "host", "track", "target"],
     "oci-bassh-ssh.schema.json": ["ok", "host", "auth", "ensure", "ssh_command"],
     "oci-bassh-contract-check.schema.json": ["ok", "checks"],
+    "oci-bassh-explain.schema.json": ["ok", "host", "explain"],
+    "oci-bassh-paths.schema.json": ["ok", "paths"],
+    "oci-bassh-upgrade.schema.json": ["ok", "dry_run", "command"],
+    "oci-bassh-version.schema.json": ["ok", "version", "commit", "date"],
 }
 
 
@@ -28,6 +32,8 @@ def load(path):
 def main():
     for schema in SCHEMAS.glob("*.schema.json"):
         load(schema)
+    if len(sys.argv) == 1:
+        return 0
     if len(sys.argv) < 3 or len(sys.argv[1:]) % 2:
         print("usage: validate_contracts.py <schema-name> <json-file> ...", file=sys.stderr)
         return 2

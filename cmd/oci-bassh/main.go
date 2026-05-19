@@ -5,9 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
+
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -42,57 +46,294 @@ func main() {
 }
 
 func run(args []string) error {
-	if len(args) == 0 {
-		usage(os.Stdout)
-		return nil
+	root := newRootCommand(os.Stdout, os.Stderr)
+	root.SetArgs(args)
+	return root.Execute()
+}
+
+func newRootCommand(stdout, stderr io.Writer) *cobra.Command {
+	var rootVersion bool
+	var rootJSON bool
+	var versionCount int
+	root := &cobra.Command{
+		Use:           "oci-bassh",
+		Short:         "Manage SSH to OCI compute hosts through OCI Bastion",
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 0 {
+				return cliError{code: 2, msg: "unknown command: " + args[0]}
+			}
+			if rootVersion || rootJSON || versionCount > 0 {
+				format := "text"
+				if rootJSON {
+					format = "json"
+				}
+				return emitVersion(format, versionCount > 1)
+			}
+			return cmd.Help()
+		},
 	}
-	switch args[0] {
-	case "-h", "--help", "help":
-		usage(os.Stdout)
-		return nil
-	case "-v", "--version", "version":
-		fmt.Println(version)
-		return nil
-	case "-vv":
-		fmt.Printf("%s (commit=%s date=%s)\n", version, commit, date)
-		return nil
-	case "doctor":
-		return cmdDoctor(args[1:])
-	case "check":
-		return cmdCheck(args[1:])
-	case "inspect":
-		return cmdInspect(args[1:])
-	case "repair":
-		return cmdRepair(args[1:])
-	case "ensure", "ensure-target":
-		return cmdEnsure(args[1:])
-	case "track", "track-from-terraform":
-		return cmdTrack(args[1:])
-	case "ssh":
-		return cmdSSH(args[1:])
-	case "completion":
-		return cmdCompletion(args[1:])
-	case "contract-check":
-		return cmdContractCheck(args[1:])
-	default:
-		return cliError{code: 2, msg: "unknown command: " + args[0]}
+	root.SetOut(stdout)
+	root.SetErr(stderr)
+	root.Flags().BoolVar(&rootVersion, "version", false, "print version and exit")
+	root.Flags().BoolVar(&rootJSON, "json", false, "with --version, print JSON version details")
+	root.Flags().CountVarP(&versionCount, "verbose-version", "v", "print version; repeat for commit and date")
+
+	root.AddCommand(
+		newDoctorCommand(),
+		newCheckCommand(),
+		newInspectCommand(),
+		newRepairCommand(),
+		newEnsureCommand("ensure"),
+		newEnsureCommand("ensure-target"),
+		newTrackCommand("track"),
+		newTrackCommand("track-from-terraform"),
+		newSSHCommand(),
+		newExplainCommand(),
+		newPathsCommand(),
+		newUpgradeCommand(),
+		newVersionCommand(),
+		newCompletionCommand(root),
+		newContractCheckCommand(),
+	)
+	return root
+}
+
+func newDoctorCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:               "doctor [host]",
+		Short:             "Run tolerant OCI Bastion diagnostics",
+		Args:              cobra.MaximumNArgs(1),
+		ValidArgsFunction: hostCompletion,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cmdDoctor(args)
+		},
 	}
 }
 
-func usage(w *os.File) {
-	fmt.Fprintln(w, `oci-bassh manages SSH to OCI compute hosts through OCI Bastion.
+func newCheckCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:               "check [host]",
+		Short:             "Run strict OCI Bastion health checks",
+		Args:              cobra.MaximumNArgs(1),
+		ValidArgsFunction: hostCompletion,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cmdCheck(args)
+		},
+	}
+}
 
-Usage:
-  oci-bassh doctor [host]
-  oci-bassh check [host]
-  oci-bassh inspect <host>
-  oci-bassh repair <host> [--ensure] [--identity-file PATH]
-  oci-bassh track <host> <terraform-outputs> [--user USER] [--identity-file PATH]
-  oci-bassh track <host> --terraform-dir DIR [--user USER] [--identity-file PATH]
-  oci-bassh ensure <host> [--identity-file PATH]
-  oci-bassh ssh [--dry-run] [--identity-file PATH] <host> [-- ssh args...]
-  oci-bassh completion bash|zsh|fish
-  oci-bassh contract-check`)
+func newInspectCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:               "inspect <host>",
+		Short:             "Inspect cached OCI, Bastion, and SSH state for a host",
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: hostCompletion,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cmdInspect(args)
+		},
+	}
+}
+
+func newRepairCommand() *cobra.Command {
+	var ensure bool
+	var identityFile string
+	cmd := &cobra.Command{
+		Use:               "repair <host>",
+		Short:             "Repair Bastion SSH setup for a host",
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: hostCompletion,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			legacyArgs := []string{}
+			if ensure {
+				legacyArgs = append(legacyArgs, "--ensure")
+			}
+			if identityFile != "" {
+				legacyArgs = append(legacyArgs, "--identity-file", identityFile)
+			}
+			legacyArgs = append(legacyArgs, args[0])
+			return cmdRepair(legacyArgs)
+		},
+	}
+	cmd.Flags().BoolVar(&ensure, "ensure", false, "also ensure auth, Bastion session, and SSH config")
+	cmd.Flags().StringVar(&identityFile, "identity-file", "", "SSH identity file to pass to bastion-session")
+	_ = cmd.RegisterFlagCompletionFunc("identity-file", fileCompletion)
+	return cmd
+}
+
+func newEnsureCommand(name string) *cobra.Command {
+	var identityFile string
+	cmd := &cobra.Command{
+		Use:               name + " <host>",
+		Short:             "Ensure auth, Bastion session, and SSH config for a host",
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: hostCompletion,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			legacyArgs := []string{}
+			if identityFile != "" {
+				legacyArgs = append(legacyArgs, "--identity-file", identityFile)
+			}
+			legacyArgs = append(legacyArgs, args[0])
+			return cmdEnsure(legacyArgs)
+		},
+	}
+	cmd.Flags().StringVar(&identityFile, "identity-file", "", "SSH identity file to pass to bastion-session")
+	_ = cmd.RegisterFlagCompletionFunc("identity-file", fileCompletion)
+	return cmd
+}
+
+func newTrackCommand(name string) *cobra.Command {
+	var terraformDir string
+	var user string
+	var identityFile string
+	cmd := &cobra.Command{
+		Use:               name + " <host> [terraform-outputs]",
+		Short:             "Track a host from Terraform outputs",
+		Args:              cobra.RangeArgs(1, 2),
+		ValidArgsFunction: pathAfterHostCompletion,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			legacyArgs := []string{args[0]}
+			if terraformDir != "" {
+				legacyArgs = append(legacyArgs, "--terraform-dir", terraformDir)
+			} else if len(args) == 2 {
+				legacyArgs = append(legacyArgs, args[1])
+			}
+			if user != "" {
+				legacyArgs = append(legacyArgs, "--user", user)
+			}
+			if identityFile != "" {
+				legacyArgs = append(legacyArgs, "--identity-file", identityFile)
+			}
+			return cmdTrack(legacyArgs)
+		},
+	}
+	cmd.Flags().StringVar(&terraformDir, "terraform-dir", "", "Terraform directory or outputs path")
+	cmd.Flags().StringVar(&user, "user", "", "SSH user to pass to bastion-session")
+	cmd.Flags().StringVar(&identityFile, "identity-file", "", "SSH identity file to pass to bastion-session")
+	_ = cmd.RegisterFlagCompletionFunc("terraform-dir", dirCompletion)
+	_ = cmd.RegisterFlagCompletionFunc("identity-file", fileCompletion)
+	return cmd
+}
+
+func newSSHCommand() *cobra.Command {
+	var dryRun bool
+	var identityFile string
+	cmd := &cobra.Command{
+		Use:                   "ssh [--dry-run] [--identity-file PATH] <host> [-- ssh args...]",
+		Short:                 "Ensure setup and connect with ssh",
+		ValidArgsFunction:     hostCompletion,
+		DisableFlagParsing:    true,
+		DisableFlagsInUseLine: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 1 && (args[0] == "-h" || args[0] == "--help") {
+				return cmd.Help()
+			}
+			return cmdSSH(args)
+		},
+	}
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "emit JSON with the ssh command instead of connecting")
+	cmd.Flags().StringVar(&identityFile, "identity-file", "", "SSH identity file to pass to bastion-session")
+	_ = cmd.RegisterFlagCompletionFunc("identity-file", fileCompletion)
+	return cmd
+}
+
+func newExplainCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:               "explain <host>",
+		Short:             "Explain the current OCI Bastion SSH path for a host",
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: hostCompletion,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cmdExplain(args)
+		},
+	}
+}
+
+func newPathsCommand() *cobra.Command {
+	format := "text"
+	cmd := &cobra.Command{
+		Use:   "paths",
+		Short: "Print local paths used by oci-bassh",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cmdPaths(format)
+		},
+	}
+	cmd.Flags().StringVarP(&format, "output", "o", "text", "output format: json or text")
+	_ = cmd.RegisterFlagCompletionFunc("output", outputFormatCompletion)
+	return cmd
+}
+
+func newUpgradeCommand() *cobra.Command {
+	var runInstaller bool
+	var prefix string
+	var releaseVersion string
+	cmd := &cobra.Command{
+		Use:   "upgrade",
+		Short: "Print or run safe installer guidance",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cmdUpgrade(runInstaller, prefix, releaseVersion)
+		},
+	}
+	cmd.Flags().BoolVar(&runInstaller, "run", false, "run the installer command; default is dry-run guidance")
+	cmd.Flags().StringVar(&prefix, "prefix", "", "installation prefix to pass as PREFIX")
+	cmd.Flags().StringVar(&releaseVersion, "release", "", "release version to pass as VERSION")
+	return cmd
+}
+
+func newVersionCommand() *cobra.Command {
+	format := "text"
+	cmd := &cobra.Command{
+		Use:   "version",
+		Short: "Print oci-bassh version",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if jsonFlag, _ := cmd.Flags().GetBool("json"); jsonFlag {
+				format = "json"
+			}
+			return emitVersion(format, false)
+		},
+	}
+	cmd.Flags().StringVarP(&format, "output", "o", "text", "output format: json or text")
+	cmd.Flags().Bool("json", false, "print JSON version details")
+	_ = cmd.RegisterFlagCompletionFunc("output", outputFormatCompletion)
+	return cmd
+}
+
+func newCompletionCommand(root *cobra.Command) *cobra.Command {
+	return &cobra.Command{
+		Use:       "completion bash|zsh|fish|powershell",
+		Short:     "Generate shell completion scripts",
+		Args:      cobra.ExactArgs(1),
+		ValidArgs: []string{"bash", "zsh", "fish", "powershell"},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			switch args[0] {
+			case "bash":
+				return root.GenBashCompletion(os.Stdout)
+			case "zsh":
+				return root.GenZshCompletion(os.Stdout)
+			case "fish":
+				return root.GenFishCompletion(os.Stdout, true)
+			case "powershell":
+				return root.GenPowerShellCompletion(os.Stdout)
+			default:
+				return cliError{code: 2, msg: "completion requires bash, zsh, fish, or powershell"}
+			}
+		},
+	}
+}
+
+func newContractCheckCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "contract-check",
+		Short: "Verify downstream JSON command contracts",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cmdContractCheck(args)
+		},
+	}
 }
 
 func cmdDoctor(args []string) error {
@@ -319,31 +560,100 @@ func cmdSSH(args []string) error {
 	return syscallExec("ssh", sshCmd)
 }
 
-func cmdCompletion(args []string) error {
-	if len(args) != 1 {
-		return cliError{code: 2, msg: "completion requires bash, zsh, or fish"}
+func cmdExplain(args []string) error {
+	host, err := requiredHostOnly("explain", args)
+	if err != nil {
+		return err
 	}
-	switch args[0] {
-	case "bash":
-		fmt.Print(`_oci_bassh_complete()
-{
-  local cur="${COMP_WORDS[COMP_CWORD]}"
-  local cmds="doctor check inspect repair track track-from-terraform ensure ensure-target ssh completion contract-check version"
-  COMPREPLY=( $(compgen -W "$cmds" -- "$cur") )
-}
-complete -F _oci_bassh_complete oci-bassh
-`)
-	case "zsh":
-		fmt.Print(`#compdef oci-bassh
-_arguments '1:command:(doctor check inspect repair track track-from-terraform ensure ensure-target ssh completion contract-check version)'
-`)
-	case "fish":
-		fmt.Print(`complete -c oci-bassh -f -a "doctor check inspect repair track track-from-terraform ensure ensure-target ssh completion contract-check version"
-`)
-	default:
-		return cliError{code: 2, msg: "completion requires bash, zsh, or fish"}
+	explained := runJSON("bastion-session", "explain", host, "-o", "json")
+	ok := explained.OK
+	out := map[string]any{"ok": ok, "host": host, "explain": explained}
+	if !ok {
+		out["issue"] = firstIssue("explain failed", nextForHost("oci-bassh inspect", host), explained)
+	}
+	if err := emit(out); err != nil {
+		return err
+	}
+	if !ok {
+		return cliError{code: 1, msg: "explain failed"}
 	}
 	return nil
+}
+
+func cmdPaths(format string) error {
+	payload := pathsPayload()
+	switch format {
+	case "json":
+		return emit(payload)
+	case "text", "":
+		for _, key := range []string{"executable", "home", "oci_context_config", "oci_config", "ssh_config", "ssh_dir", "bastion_cache", "install_script"} {
+			fmt.Fprintf(os.Stdout, "%s=%s\n", key, payload["paths"].(map[string]string)[key])
+		}
+		return nil
+	default:
+		return cliError{code: 2, msg: "paths output must be json or text"}
+	}
+}
+
+func cmdUpgrade(runInstaller bool, prefix, releaseVersion string) error {
+	installCommand := upgradeCommand(prefix, releaseVersion)
+	if !runInstaller {
+		return emit(map[string]any{
+			"ok":      true,
+			"dry_run": true,
+			"message": "Run with --run to execute the installer command.",
+			"command": installCommand,
+		})
+	}
+	cmd := exec.Command("bash", "-lc", strings.Join(installCommand, " "))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	rc := 0
+	if err != nil {
+		rc = 1
+		var ee *exec.ExitError
+		if errors.As(err, &ee) {
+			rc = ee.ExitCode()
+		}
+	}
+	ok := err == nil
+	out := map[string]any{
+		"ok":        ok,
+		"dry_run":   false,
+		"command":   installCommand,
+		"exit_code": rc,
+		"stdout":    stdout.String(),
+		"stderr":    stderr.String(),
+	}
+	if !ok {
+		out["issue"] = issue{ErrorCode: "upgrade_failed", Message: strings.TrimSpace(stderr.String()), NextCommand: "oci-bassh upgrade"}
+	}
+	if err := emit(out); err != nil {
+		return err
+	}
+	if !ok {
+		return cliError{code: 1, msg: "upgrade failed"}
+	}
+	return nil
+}
+
+func emitVersion(format string, verbose bool) error {
+	switch format {
+	case "json":
+		return emit(map[string]any{"ok": true, "version": version, "commit": commit, "date": date})
+	case "text", "":
+		if verbose {
+			fmt.Printf("%s (commit=%s date=%s)\n", version, commit, date)
+		} else {
+			fmt.Println(version)
+		}
+		return nil
+	default:
+		return cliError{code: 2, msg: "version output must be json or text"}
+	}
 }
 
 func cmdContractCheck(args []string) error {
@@ -614,6 +924,94 @@ func nextForHost(prefix, host string) string {
 		return strings.TrimSpace(prefix)
 	}
 	return strings.TrimSpace(prefix) + " " + host
+}
+
+func pathsPayload() map[string]any {
+	home, _ := os.UserHomeDir()
+	exe, _ := os.Executable()
+	absExe, err := filepath.Abs(exe)
+	if err == nil {
+		exe = absExe
+	}
+	paths := map[string]string{
+		"executable":         exe,
+		"home":               home,
+		"oci_context_config": filepath.Join(home, ".oci-context", "config.yml"),
+		"oci_config":         filepath.Join(home, ".oci", "config"),
+		"ssh_config":         filepath.Join(home, ".ssh", "config"),
+		"ssh_dir":            filepath.Join(home, ".ssh"),
+		"bastion_cache":      filepath.Join(home, ".cache", "bastion-session"),
+		"install_script":     "https://raw.githubusercontent.com/adrianmross/oci-bassh/main/install.sh",
+	}
+	return map[string]any{"ok": true, "paths": paths}
+}
+
+func upgradeCommand(prefix, releaseVersion string) []string {
+	env := []string{}
+	if prefix != "" {
+		env = append(env, "PREFIX="+shellQuote(prefix))
+	}
+	if releaseVersion != "" {
+		env = append(env, "VERSION="+shellQuote(releaseVersion))
+	}
+	cmd := []string{"curl", "-fsSL", "https://raw.githubusercontent.com/adrianmross/oci-bassh/main/install.sh", "|"}
+	if len(env) == 0 {
+		return append(cmd, "bash")
+	}
+	cmd = append(cmd, env...)
+	return append(cmd, "bash")
+}
+
+func shellQuote(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", "'\\''") + "'"
+}
+
+func hostCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	if len(args) > 0 {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	targets := runJSON("bastion-session", "target", "list", "-o", "json")
+	if !targets.OK || targets.JSON == nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	return completeTargets(*targets.JSON, toComplete), cobra.ShellCompDirectiveNoFileComp
+}
+
+func pathAfterHostCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	if len(args) == 0 {
+		return hostCompletion(cmd, args, toComplete)
+	}
+	return nil, cobra.ShellCompDirectiveDefault
+}
+
+func fileCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return nil, cobra.ShellCompDirectiveDefault
+}
+
+func dirCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return nil, cobra.ShellCompDirectiveFilterDirs
+}
+
+func outputFormatCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return []string{"json", "text"}, cobra.ShellCompDirectiveNoFileComp
+}
+
+func completeTargets(raw json.RawMessage, prefix string) []string {
+	var items []map[string]any
+	if json.Unmarshal(raw, &items) != nil {
+		return nil
+	}
+	var out []string
+	for _, item := range items {
+		for _, key := range []string{"name", "host", "hostname"} {
+			name, _ := item[key].(string)
+			if name != "" && strings.HasPrefix(name, prefix) {
+				out = append(out, name)
+				break
+			}
+		}
+	}
+	return out
 }
 
 type cliError struct {

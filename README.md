@@ -18,6 +18,10 @@ oci-bassh repair --ensure vmordws02
 oci-bassh track vmordws02 ./tf
 oci-bassh ensure vmordws02
 oci-bassh ssh --dry-run vmordws02
+oci-bassh explain vmordws02
+oci-bassh paths -o json
+oci-bassh upgrade
+oci-bassh version -o json
 oci-bassh contract-check
 ```
 
@@ -29,6 +33,8 @@ go run ./cmd/oci-bassh inspect vmordws02
 go run ./cmd/oci-bassh track vmordws02 ./tf
 go run ./cmd/oci-bassh ensure vmordws02
 go run ./cmd/oci-bassh ssh vmordws02
+go run ./cmd/oci-bassh explain vmordws02
+go run ./cmd/oci-bassh paths
 ```
 
 The longer aliases remain available when the caller wants names that describe
@@ -42,6 +48,21 @@ oci-bassh ensure-target vmordws02
 Use `doctor` for tolerant diagnostics that always produce JSON. Use `check`
 for strict health gates where unhealthy dependencies should return a non-zero
 exit status.
+
+`explain <host>` wraps the downstream `bastion-session explain <host> -o json`
+surface and returns the downstream result inside the stable `oci-bassh` command
+result envelope.
+
+`paths -o text` prints local config/cache paths as `key=value` lines.
+`paths -o json` emits the same paths as a JSON contract.
+
+`upgrade` is safe by default: it emits dry-run JSON with the installer command
+instead of executing it. Add `--run` only when the installer should be executed.
+`--prefix` and `--release` are translated into `PREFIX` and `VERSION` for the
+installer.
+
+`version` defaults to text output. Use `version -o json`, `version --json`, or
+`--version --json` for machine-readable version details.
 
 For ordinary inspection, the skills prefer `oci-context status --cached -o json`,
 `oci-context auth show --output json`, and `oci-context auth ensure --output json`.
@@ -80,6 +101,10 @@ compatibility for:
 - `oci-bassh track`
 - `oci-bassh ensure`
 - `oci-bassh ssh --dry-run`
+- `oci-bassh explain`
+- `oci-bassh paths -o json`
+- `oci-bassh upgrade`
+- `oci-bassh version -o json`
 - `oci-bassh contract-check`
 
 The schemas cover the stable wrapper contract. Nested downstream payloads from
