@@ -26,7 +26,9 @@ jobs:
 
       - name: Checkout tag
         if: github.event_name == 'workflow_dispatch'
-        run: git checkout "$RELEASE_TAG"
+        run: |
+          git fetch --tags --force
+          git checkout "$RELEASE_TAG"
 
       - name: Set up Go
         uses: actions/setup-go@v6
@@ -47,3 +49,4 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GORELEASER_CURRENT_TAG: ${{ env.RELEASE_TAG }}
