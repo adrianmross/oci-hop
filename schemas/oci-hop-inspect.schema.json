@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "oci-hop inspect",
+  "type": "object",
+  "required": ["ok", "host", "versions", "oci_status", "auth", "bastion_doctor", "ssh_config", "ssh_effective"],
+  "properties": {
+    "ok": {"type": "boolean"},
+    "host": {"type": "string"},
+    "versions": {"type": "object"},
+    "issue": {"type": "object"},
+    "oci_status": {"$ref": "oci-hop-command-result.schema.json"},
+    "auth": {"$ref": "oci-hop-command-result.schema.json"},
+    "bastion_doctor": {"$ref": "oci-hop-command-result.schema.json"},
+    "ssh_config": {"$ref": "oci-hop-command-result.schema.json"},
+    "ssh_effective": {"$ref": "oci-hop-command-result.schema.json"}
+  }
+}

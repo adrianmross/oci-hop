@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "oci-bassh version",
+  "title": "oci-hop version",
   "type": "object",
   "required": ["ok", "version", "commit", "date"],
   "properties": {

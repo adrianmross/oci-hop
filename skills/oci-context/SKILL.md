@@ -39,9 +39,9 @@ For agent runs, prefer non-interactive paths. If a command reports `login_requir
 For a compact machine-readable health check:
 
 ```bash
-oci-bassh doctor
+hop doctor
 ```
 
-`oci-bassh doctor` is tolerant and should still return JSON when dependencies
-are unhealthy. Use `oci-bassh check` when an automation needs a non-zero exit
+`hop doctor` is tolerant and should still return JSON when dependencies
+are unhealthy. Use `hop check` when an automation needs a non-zero exit
 for unhealthy diagnostics.

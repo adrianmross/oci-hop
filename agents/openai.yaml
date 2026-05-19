@@ -1,15 +1,16 @@
-display_name: OCI Bassh
+display_name: OCI Bastion Hopper
 short_description: Ensure SSH access to OCI compute hosts through OCI Bastion with stable JSON output.
 default_prompt: Check OCI auth, inspect a tracked host, and ensure the SSH path through Bastion.
 skills:
   - skills/oci-context/SKILL.md
   - skills/bastion-session/SKILL.md
 recommended_commands:
-  health: oci-bassh doctor
-  strict_health: oci-bassh check
-  inspect_host: oci-bassh inspect <host>
-  ensure_host: oci-bassh ensure <host>
-  dry_run_ssh: oci-bassh ssh --dry-run <host>
+  prepare_host: hop <host>
+  health: hop doctor
+  strict_health: hop check
+  inspect_host: hop inspect <host>
+  ensure_host: hop ensure <host>
+  dry_run_ssh: hop ssh --dry-run <host>
 contract:
   output: Prefer JSON with -o json or --output json.
   host_model: The compute host alias is the user-facing SSH target; bastion aliases are internal ProxyJump endpoints.

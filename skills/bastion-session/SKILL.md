@@ -19,7 +19,7 @@ Use this skill for OCI Bastion managed SSH access. Prefer compute-host-facing ta
    ```
 3. Inspect a target without creating sessions:
    ```bash
-   oci-bassh inspect <host>
+   hop inspect <host>
    ```
 4. Ensure the VM-facing SSH target:
    ```bash
@@ -56,11 +56,11 @@ bastion-session target track <host> \
 For an end-to-end ensure operation with one JSON result:
 
 ```bash
-oci-bassh ensure-target <host>
+hop ensure-target <host>
 ```
 
 For repairable setup drift, use:
 
 ```bash
-oci-bassh repair --ensure <host>
+hop repair --ensure <host>
 ```

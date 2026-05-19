@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "oci-bassh contract-check",
+  "title": "oci-hop contract-check",
   "type": "object",
   "required": ["ok", "checks"],
   "properties": {
     "ok": {"type": "boolean"},
     "checks": {
       "type": "array",
-      "items": {"$ref": "oci-bassh-command-result.schema.json"}
+      "items": {"$ref": "oci-hop-command-result.schema.json"}
     }
   }
 }

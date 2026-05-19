@@ -22,7 +22,7 @@ func TestRealLowerCLIBinariesContract(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	binary := buildOCIBassh(t, tmp)
+	binary := buildOCIHop(t, tmp)
 	symlinkExecutable(t, ociContext, filepath.Join(binDir, "oci-context"))
 	symlinkExecutable(t, bastionSession, filepath.Join(binDir, "bastion-session"))
 	writeRealBoundaryShims(t, binDir)
@@ -37,21 +37,21 @@ func TestRealLowerCLIBinariesContract(t *testing.T) {
 		schema string
 		args   []string
 	}{
-		{"oci-bassh-track.schema.json", append(helper, "track-from-terraform", "my-vps-01", tfDir)},
-		{"oci-bassh-track.schema.json", append(helper, "track", "my-vps-01", tfDir)},
-		{"oci-bassh-track.schema.json", append(helper, "track", "my-vps-01", "--terraform-dir", tfDir)},
-		{"oci-bassh-ensure.schema.json", append(helper, "ensure-target", "my-vps-01")},
-		{"oci-bassh-ensure.schema.json", append(helper, "ensure", "my-vps-01")},
-		{"oci-bassh-ssh.schema.json", append(helper, "ssh", "--dry-run", "my-vps-01")},
-		{"oci-bassh-doctor.schema.json", append(helper, "doctor")},
-		{"oci-bassh-check.schema.json", append(helper, "check")},
-		{"oci-bassh-inspect.schema.json", append(helper, "inspect", "my-vps-01")},
-		{"oci-bassh-repair.schema.json", append(helper, "repair", "my-vps-01")},
-		{"oci-bassh-repair.schema.json", append(helper, "repair", "--ensure", "my-vps-01")},
-		{"oci-bassh-paths.schema.json", append(helper, "paths", "-o", "json")},
-		{"oci-bassh-upgrade.schema.json", append(helper, "upgrade")},
-		{"oci-bassh-version.schema.json", append(helper, "version", "-o", "json")},
-		{"oci-bassh-version.schema.json", append(helper, "--version", "--json")},
+		{"oci-hop-track.schema.json", append(helper, "track-from-terraform", "my-vps-01", tfDir)},
+		{"oci-hop-track.schema.json", append(helper, "track", "my-vps-01", tfDir)},
+		{"oci-hop-track.schema.json", append(helper, "track", "my-vps-01", "--terraform-dir", tfDir)},
+		{"oci-hop-ensure.schema.json", append(helper, "ensure-target", "my-vps-01")},
+		{"oci-hop-ensure.schema.json", append(helper, "ensure", "my-vps-01")},
+		{"oci-hop-ssh.schema.json", append(helper, "ssh", "--dry-run", "my-vps-01")},
+		{"oci-hop-doctor.schema.json", append(helper, "doctor")},
+		{"oci-hop-check.schema.json", append(helper, "check")},
+		{"oci-hop-inspect.schema.json", append(helper, "inspect", "my-vps-01")},
+		{"oci-hop-repair.schema.json", append(helper, "repair", "my-vps-01")},
+		{"oci-hop-repair.schema.json", append(helper, "repair", "--ensure", "my-vps-01")},
+		{"oci-hop-paths.schema.json", append(helper, "paths", "-o", "json")},
+		{"oci-hop-upgrade.schema.json", append(helper, "upgrade")},
+		{"oci-hop-version.schema.json", append(helper, "version", "-o", "json")},
+		{"oci-hop-version.schema.json", append(helper, "--version", "--json")},
 	}
 
 	for _, check := range checks {

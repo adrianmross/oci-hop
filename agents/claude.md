@@ -1,16 +1,16 @@
-# OCI Bassh Agent Instructions
+# OCI Bastion Hopper Agent Instructions
 
 Use these instructions for OCI Bastion SSH workflows from any shell-capable
 agent.
 
 ## When To Use
 
-Use `oci-bassh` when the user asks to connect to, diagnose, repair, or explain
+Use `hop` when the user asks to prepare, diagnose, repair, or explain
 SSH access to an OCI compute host through OCI Bastion.
 
 ## Operating Rules
 
-- Prefer `oci-bassh` for end-to-end host workflows.
+- Prefer `hop` for end-to-end host workflows.
 - Prefer `oci-context` only for context/auth questions.
 - Prefer `bastion-session` only for lower-level session or target management.
 - Use JSON output whenever available.
@@ -21,11 +21,12 @@ SSH access to an OCI compute host through OCI Bastion.
 ## Command Flow
 
 ```bash
-oci-bassh doctor
-oci-bassh inspect <host>
-oci-bassh explain <host>
-oci-bassh ensure <host>
-oci-bassh ssh --dry-run <host>
+hop <host>
+hop doctor
+hop inspect <host>
+hop explain <host>
+hop ensure <host>
+hop ssh --dry-run <host>
 ```
 
 Run `ssh <host>` only when the user wants an actual connection attempt.

@@ -1,15 +1,15 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "oci-bassh ensure",
+  "title": "oci-hop ensure",
   "type": "object",
   "required": ["ok", "host", "auth", "ensure", "ssh_config", "connect_command"],
   "properties": {
     "ok": {"type": "boolean"},
     "host": {"type": "string"},
     "issue": {"type": "object"},
-    "auth": {"$ref": "oci-bassh-command-result.schema.json"},
-    "ensure": {"$ref": "oci-bassh-command-result.schema.json"},
-    "ssh_config": {"$ref": "oci-bassh-command-result.schema.json"},
+    "auth": {"$ref": "oci-hop-command-result.schema.json"},
+    "ensure": {"$ref": "oci-hop-command-result.schema.json"},
+    "ssh_config": {"$ref": "oci-hop-command-result.schema.json"},
     "connect_command": {"type": "string"}
   }
 }

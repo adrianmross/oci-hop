@@ -21,19 +21,17 @@ case "${1:-}" in
     printf '    '; key proxyjump; printf ': '; str my-bastion; printf '\n'
     printf '  }\n}\n'
     ;;
-  ensure)
-    printf '{\n  '; key ok; printf ': '; bool true; printf ',\n'
-    printf '  '; key action; printf ': '; str reused_active_session; printf ',\n'
-    printf '  '; key ssh_target; printf ': '; str my-vps-01; printf ',\n'
-    printf '  '; key connect; printf ': '; str 'ssh my-vps-01'; printf '\n}\n'
+  my-vps-01)
+    printf 'ready  my-vps-01  10.0.1.25  via my-bastion\n'
     ;;
   paths)
-    printf '{\n  '; key binary; printf ': '; str /opt/homebrew/bin/oci-bassh; printf ',\n'
+    printf '{\n  '; key binary; printf ': '; str /opt/homebrew/bin/hop; printf ',\n'
+    printf '  '; key qualified_binary; printf ': '; str /opt/homebrew/bin/oci-hop; printf ',\n'
     printf '  '; key ssh_include; printf ': '; str '~/.ssh/config.d/bastion-session'; printf ',\n'
     printf '  '; key tracked_targets; printf ': '; str '~/.cache/bastion-session/tracked-targets.json'; printf '\n}\n'
     ;;
   *)
-    printf '%boci-bassh demo shim: unsupported command%b\n' "$c_error" "$c_reset" >&2
+    printf '%bhop demo shim: unsupported command%b\n' "$c_error" "$c_reset" >&2
     exit 2
     ;;
 esac

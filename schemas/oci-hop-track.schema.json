@@ -1,12 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "oci-bassh explain",
+  "title": "oci-hop track",
   "type": "object",
-  "required": ["ok", "host", "explain"],
+  "required": ["ok", "host", "track", "target"],
   "properties": {
     "ok": {"type": "boolean"},
     "host": {"type": "string"},
     "issue": {"type": "object"},
-    "explain": {"$ref": "oci-bassh-command-result.schema.json"}
+    "track": {"$ref": "oci-hop-command-result.schema.json"},
+    "target": {"$ref": "oci-hop-command-result.schema.json"}
   }
 }

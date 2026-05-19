@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "oci-bassh command result",
+  "title": "oci-hop command result",
   "type": "object",
   "required": ["command", "ok", "exit_code", "stdout", "stderr"],
   "properties": {

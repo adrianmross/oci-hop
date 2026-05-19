@@ -11,18 +11,18 @@ import (
 )
 
 var requiredKeys = map[string][]string{
-	"oci-bassh-doctor.schema.json":         {"ok", "tools", "versions", "oci_context", "bastion_doctor", "targets"},
-	"oci-bassh-check.schema.json":          {"ok", "tools", "versions", "oci_context", "bastion_doctor", "targets"},
-	"oci-bassh-inspect.schema.json":        {"ok", "host", "versions", "oci_status", "auth", "bastion_doctor", "ssh_config", "ssh_effective"},
-	"oci-bassh-repair.schema.json":         {"ok", "host", "repair", "ensure_requested", "connect_command"},
-	"oci-bassh-ensure.schema.json":         {"ok", "host", "auth", "ensure", "ssh_config", "connect_command"},
-	"oci-bassh-track.schema.json":          {"ok", "host", "track", "target"},
-	"oci-bassh-ssh.schema.json":            {"ok", "host", "auth", "ensure", "ssh_command"},
-	"oci-bassh-contract-check.schema.json": {"ok", "checks"},
-	"oci-bassh-explain.schema.json":        {"ok", "host", "explain"},
-	"oci-bassh-paths.schema.json":          {"ok", "paths"},
-	"oci-bassh-upgrade.schema.json":        {"ok", "dry_run", "command"},
-	"oci-bassh-version.schema.json":        {"ok", "version", "commit", "date"},
+	"oci-hop-doctor.schema.json":         {"ok", "tools", "versions", "oci_context", "bastion_doctor", "targets"},
+	"oci-hop-check.schema.json":          {"ok", "tools", "versions", "oci_context", "bastion_doctor", "targets"},
+	"oci-hop-inspect.schema.json":        {"ok", "host", "versions", "oci_status", "auth", "bastion_doctor", "ssh_config", "ssh_effective"},
+	"oci-hop-repair.schema.json":         {"ok", "host", "repair", "ensure_requested", "connect_command"},
+	"oci-hop-ensure.schema.json":         {"ok", "host", "auth", "ensure", "ssh_config", "connect_command"},
+	"oci-hop-track.schema.json":          {"ok", "host", "track", "target"},
+	"oci-hop-ssh.schema.json":            {"ok", "host", "auth", "ensure", "ssh_command"},
+	"oci-hop-contract-check.schema.json": {"ok", "checks"},
+	"oci-hop-explain.schema.json":        {"ok", "host", "explain"},
+	"oci-hop-paths.schema.json":          {"ok", "paths"},
+	"oci-hop-upgrade.schema.json":        {"ok", "dry_run", "command"},
+	"oci-hop-version.schema.json":        {"ok", "version", "commit", "date"},
 }
 
 type commandRun struct {
@@ -52,7 +52,7 @@ func TestHermeticCLIContract(t *testing.T) {
 	if err := os.Mkdir(binDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	binary := buildOCIBassh(t, tmp)
+	binary := buildOCIHop(t, tmp)
 	writeHermeticShims(t, binDir)
 	env := append(os.Environ(), "PATH="+binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 	helper := []string{binary}
@@ -61,24 +61,24 @@ func TestHermeticCLIContract(t *testing.T) {
 		schema string
 		args   []string
 	}{
-		{"oci-bassh-doctor.schema.json", append(helper, "doctor")},
-		{"oci-bassh-check.schema.json", append(helper, "check")},
-		{"oci-bassh-inspect.schema.json", append(helper, "inspect", "my-vps-01")},
-		{"oci-bassh-repair.schema.json", append(helper, "repair", "my-vps-01")},
-		{"oci-bassh-repair.schema.json", append(helper, "repair", "--ensure", "my-vps-01")},
-		{"oci-bassh-ensure.schema.json", append(helper, "ensure-target", "my-vps-01")},
-		{"oci-bassh-ensure.schema.json", append(helper, "ensure", "my-vps-01")},
-		{"oci-bassh-track.schema.json", append(helper, "track-from-terraform", "my-vps-01", tmp)},
-		{"oci-bassh-track.schema.json", append(helper, "track", "my-vps-01", tmp)},
-		{"oci-bassh-track.schema.json", append(helper, "track", "my-vps-01", "--terraform-dir", tmp)},
-		{"oci-bassh-ssh.schema.json", append(helper, "ssh", "--dry-run", "my-vps-01")},
-		{"oci-bassh-ssh.schema.json", append(helper, "ssh", "--dry-run", "my-vps-01", "-p", "2222")},
-		{"oci-bassh-explain.schema.json", append(helper, "explain", "my-vps-01")},
-		{"oci-bassh-paths.schema.json", append(helper, "paths", "-o", "json")},
-		{"oci-bassh-upgrade.schema.json", append(helper, "upgrade")},
-		{"oci-bassh-version.schema.json", append(helper, "version", "-o", "json")},
-		{"oci-bassh-version.schema.json", append(helper, "--version", "--json")},
-		{"oci-bassh-contract-check.schema.json", append(helper, "contract-check")},
+		{"oci-hop-doctor.schema.json", append(helper, "doctor")},
+		{"oci-hop-check.schema.json", append(helper, "check")},
+		{"oci-hop-inspect.schema.json", append(helper, "inspect", "my-vps-01")},
+		{"oci-hop-repair.schema.json", append(helper, "repair", "my-vps-01")},
+		{"oci-hop-repair.schema.json", append(helper, "repair", "--ensure", "my-vps-01")},
+		{"oci-hop-ensure.schema.json", append(helper, "ensure-target", "my-vps-01")},
+		{"oci-hop-ensure.schema.json", append(helper, "ensure", "my-vps-01")},
+		{"oci-hop-track.schema.json", append(helper, "track-from-terraform", "my-vps-01", tmp)},
+		{"oci-hop-track.schema.json", append(helper, "track", "my-vps-01", tmp)},
+		{"oci-hop-track.schema.json", append(helper, "track", "my-vps-01", "--terraform-dir", tmp)},
+		{"oci-hop-ssh.schema.json", append(helper, "ssh", "--dry-run", "my-vps-01")},
+		{"oci-hop-ssh.schema.json", append(helper, "ssh", "--dry-run", "my-vps-01", "-p", "2222")},
+		{"oci-hop-explain.schema.json", append(helper, "explain", "my-vps-01")},
+		{"oci-hop-paths.schema.json", append(helper, "paths", "-o", "json")},
+		{"oci-hop-upgrade.schema.json", append(helper, "upgrade")},
+		{"oci-hop-version.schema.json", append(helper, "version", "-o", "json")},
+		{"oci-hop-version.schema.json", append(helper, "--version", "--json")},
+		{"oci-hop-contract-check.schema.json", append(helper, "contract-check")},
 	}
 
 	for _, check := range checks {
@@ -92,6 +92,37 @@ func TestHermeticCLIContract(t *testing.T) {
 		})
 	}
 
+	ready := runCommandForTest(t, append(helper, "my-vps-01"), env)
+	if ready.code != 0 {
+		t.Fatalf("hop host failed with %d\nstdout:\n%s\nstderr:\n%s", ready.code, ready.stdout, ready.stderr)
+	}
+	if got, want := strings.TrimSpace(ready.stdout), "ready  my-vps-01  10.0.1.25  via my-bastion"; got != want {
+		t.Fatalf("unexpected compact ready line\nwant: %q\n got: %q", want, got)
+	}
+
+	readyJSON := runCommandForTest(t, append(helper, "-o", "json", "my-vps-01"), env)
+	if readyJSON.code != 0 {
+		t.Fatalf("hop host json failed with %d\nstdout:\n%s\nstderr:\n%s", readyJSON.code, readyJSON.stdout, readyJSON.stderr)
+	}
+	readyPayload := decodeObject(t, readyJSON.stdout)
+	for _, key := range []string{"ok", "host", "auth", "ensure", "ssh_config"} {
+		if _, ok := readyPayload[key]; !ok {
+			t.Fatalf("ready json missing %q in %#v", key, readyPayload)
+		}
+	}
+
+	for _, name := range []string{"hop", "oci-bassh"} {
+		link := filepath.Join(tmp, name)
+		if err := os.Symlink(binary, link); err != nil {
+			t.Fatal(err)
+		}
+		run := runCommandForTest(t, []string{link, "version", "-o", "json"}, env)
+		if run.code != 0 {
+			t.Fatalf("%s compatibility command failed with %d\nstdout:\n%s\nstderr:\n%s", name, run.code, run.stdout, run.stderr)
+		}
+		assertRequiredKeys(t, "oci-hop-version.schema.json", decodeObject(t, run.stdout))
+	}
+
 	failEnv := append([]string{}, env...)
 	failEnv = append(failEnv, "BASTION_SESSION_FAIL_DOCTOR=1")
 	doctor := runCommandForTest(t, append(helper, "doctor", "my-vps-01"), failEnv)
@@ -99,7 +130,7 @@ func TestHermeticCLIContract(t *testing.T) {
 		t.Fatalf("doctor should report unhealthy diagnostics without failing, got %d\nstdout:\n%s\nstderr:\n%s", doctor.code, doctor.stdout, doctor.stderr)
 	}
 	doctorPayload := decodeObject(t, doctor.stdout)
-	assertRequiredKeys(t, "oci-bassh-doctor.schema.json", doctorPayload)
+	assertRequiredKeys(t, "oci-hop-doctor.schema.json", doctorPayload)
 	if doctorPayload["ok"] != false || doctorPayload["issue"] == nil {
 		t.Fatalf("doctor failure payload should include ok=false and issue, got %#v", doctorPayload)
 	}
@@ -108,13 +139,13 @@ func TestHermeticCLIContract(t *testing.T) {
 		t.Fatalf("check should fail when diagnostics are unhealthy\nstdout:\n%s", check.stdout)
 	}
 	checkPayload := decodeObject(t, check.stdout)
-	assertRequiredKeys(t, "oci-bassh-check.schema.json", checkPayload)
+	assertRequiredKeys(t, "oci-hop-check.schema.json", checkPayload)
 }
 
-func buildOCIBassh(t *testing.T, tmp string) string {
+func buildOCIHop(t *testing.T, tmp string) string {
 	t.Helper()
-	out := filepath.Join(tmp, "oci-bassh")
-	cmd := exec.Command("go", "build", "-o", out, "./cmd/oci-bassh")
+	out := filepath.Join(tmp, "oci-hop")
+	cmd := exec.Command("go", "build", "-o", out, "./cmd/oci-hop")
 	cmd.Dir = repoRoot(t)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
