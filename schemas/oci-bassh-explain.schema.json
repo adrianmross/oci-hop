@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "oci-bassh explain",
+  "type": "object",
+  "required": ["ok", "host", "explain"],
+  "properties": {
+    "ok": {"type": "boolean"},
+    "host": {"type": "string"},
+    "issue": {"type": "object"},
+    "explain": {"$ref": "oci-bassh-command-result.schema.json"}
+  }
+}

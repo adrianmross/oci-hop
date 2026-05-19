@@ -37,6 +37,9 @@ REQUIRED = {
     "oci-bassh-ensure.schema.json": ["ok", "host", "auth", "ensure", "ssh_config", "connect_command"],
     "oci-bassh-track.schema.json": ["ok", "host", "track", "target"],
     "oci-bassh-ssh.schema.json": ["ok", "host", "auth", "ensure", "ssh_command"],
+    "oci-bassh-paths.schema.json": ["ok", "paths"],
+    "oci-bassh-upgrade.schema.json": ["ok", "dry_run", "command"],
+    "oci-bassh-version.schema.json": ["ok", "version", "commit", "date"],
 }
 
 
@@ -167,6 +170,10 @@ current_context: dev
             ("oci-bassh-inspect.schema.json", helper + ["inspect", "vmordws02"]),
             ("oci-bassh-repair.schema.json", helper + ["repair", "vmordws02"]),
             ("oci-bassh-repair.schema.json", helper + ["repair", "--ensure", "vmordws02"]),
+            ("oci-bassh-paths.schema.json", helper + ["paths", "-o", "json"]),
+            ("oci-bassh-upgrade.schema.json", helper + ["upgrade"]),
+            ("oci-bassh-version.schema.json", helper + ["version", "-o", "json"]),
+            ("oci-bassh-version.schema.json", helper + ["--version", "--json"]),
         ]
         for schema, cmd in checks:
             proc = run(cmd, env)
