@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+c_reset=$'\033[0m'
+c_prompt=$'\033[38;5;81m'
+c_value=$'\033[38;5;150m'
+c_dim=$'\033[38;5;245m'
+c_error=$'\033[38;5;203m'
+
+case "${1:-}" in
+  my-vps-01)
+    printf '%bConnecting to %bmy-vps-01%b through OCI Bastion...%b\n' "$c_dim" "$c_value" "$c_dim" "$c_reset"
+    printf '%b[cloud-user@my-vps-01 ~]$ %bhostname\n' "$c_prompt" "$c_reset"
+    printf '%bmy-vps-01%b\n' "$c_value" "$c_reset"
+    printf '%b[cloud-user@my-vps-01 ~]$ %bhostname -I\n' "$c_prompt" "$c_reset"
+    printf '%b10.0.1.25%b\n' "$c_value" "$c_reset"
+    printf '%b[cloud-user@my-vps-01 ~]$ %bexit\n' "$c_prompt" "$c_reset"
+    printf '%bConnection to my-vps-01 closed.%b\n' "$c_dim" "$c_reset"
+    ;;
+  *)
+    printf '%bssh demo shim: unsupported host %s%b\n' "$c_error" "${1:-}" "$c_reset" >&2
+    exit 2
+    ;;
+esac
