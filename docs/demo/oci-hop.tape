@@ -32,6 +32,6 @@ Sleep 1400ms
 Type "hop my-vps-01"
 Enter
 Sleep 1200ms
-Type "hop paths -o json"
+Type "ssh my-vps-01"
 Enter
-Sleep 1800ms
+Sleep 2200ms
