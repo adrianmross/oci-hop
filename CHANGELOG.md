@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## v0.6.5
+
+- Add visible `hop <host>` progress while auth and Bastion session renewal are running.
+- Add `--wait-timeout` for the root host action and pass it through to `bastion-session ensure`.
+- Keep JSON mode quiet by writing progress only for text output.
+
 ## v0.6.4
 
 - Document required dependencies before install.

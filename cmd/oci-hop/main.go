@@ -17,6 +17,7 @@ import (
 const (
 	primaryCommand   = "hop"
 	qualifiedCommand = "oci-hop"
+	defaultWaitTime  = "2m"
 )
 
 var (
@@ -51,19 +52,20 @@ func main() {
 }
 
 func run(args []string) error {
-	if host, identityFile, output, handled, err := parseRootHopArgs(args); handled || err != nil {
+	if host, identityFile, output, waitTimeout, handled, err := parseRootHopArgs(args); handled || err != nil {
 		if err != nil {
 			return err
 		}
-		return cmdHop(host, identityFile, output)
+		return cmdHop(host, identityFile, output, waitTimeout)
 	}
 	root := newRootCommand(os.Stdout, os.Stderr)
 	root.SetArgs(args)
 	return root.Execute()
 }
 
-func parseRootHopArgs(args []string) (host, identityFile, output string, handled bool, err error) {
+func parseRootHopArgs(args []string) (host, identityFile, output, waitTimeout string, handled bool, err error) {
 	output = "text"
+	waitTimeout = defaultWaitTime
 	remaining := []string{}
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
@@ -72,11 +74,11 @@ func parseRootHopArgs(args []string) (host, identityFile, output string, handled
 			remaining = append(remaining, args[i+1:]...)
 			i = len(args)
 		case arg == "-h" || arg == "--help" || arg == "--version" || arg == "--json" || arg == "-v" || arg == "--verbose-version":
-			return "", "", "", false, nil
+			return "", "", "", "", false, nil
 		case arg == "-o" || arg == "--output":
 			i++
 			if i >= len(args) {
-				return "", "", "", true, cliError{code: 2, msg: arg + " requires a value"}
+				return "", "", "", "", true, cliError{code: 2, msg: arg + " requires a value"}
 			}
 			output = args[i]
 		case strings.HasPrefix(arg, "--output="):
@@ -84,27 +86,35 @@ func parseRootHopArgs(args []string) (host, identityFile, output string, handled
 		case arg == "--identity-file":
 			i++
 			if i >= len(args) {
-				return "", "", "", true, cliError{code: 2, msg: "--identity-file requires a value"}
+				return "", "", "", "", true, cliError{code: 2, msg: "--identity-file requires a value"}
 			}
 			identityFile = args[i]
 		case strings.HasPrefix(arg, "--identity-file="):
 			identityFile = strings.TrimPrefix(arg, "--identity-file=")
+		case arg == "--wait-timeout":
+			i++
+			if i >= len(args) {
+				return "", "", "", "", true, cliError{code: 2, msg: "--wait-timeout requires a value"}
+			}
+			waitTimeout = args[i]
+		case strings.HasPrefix(arg, "--wait-timeout="):
+			waitTimeout = strings.TrimPrefix(arg, "--wait-timeout=")
 		case strings.HasPrefix(arg, "-"):
-			return "", "", "", false, nil
+			return "", "", "", "", false, nil
 		default:
 			remaining = append(remaining, arg)
 		}
 	}
 	if len(remaining) == 0 {
-		return "", "", "", false, nil
+		return "", "", "", "", false, nil
 	}
 	if knownRootCommand(remaining[0]) {
-		return "", "", "", false, nil
+		return "", "", "", "", false, nil
 	}
 	if len(remaining) > 1 {
-		return "", "", "", true, cliError{code: 2, msg: "unknown command or too many arguments: " + strings.Join(remaining, " ")}
+		return "", "", "", "", true, cliError{code: 2, msg: "unknown command or too many arguments: " + strings.Join(remaining, " ")}
 	}
-	return remaining[0], identityFile, output, true, nil
+	return remaining[0], identityFile, output, waitTimeout, true, nil
 }
 
 func knownRootCommand(name string) bool {
@@ -122,6 +132,7 @@ func newRootCommand(stdout, stderr io.Writer) *cobra.Command {
 	var versionCount int
 	var rootOutput string
 	var rootIdentityFile string
+	var rootWaitTimeout string
 	root := &cobra.Command{
 		Use:           commandName(),
 		Short:         "Prepare SSH access to OCI compute hosts through OCI Bastion",
@@ -136,7 +147,7 @@ func newRootCommand(stdout, stderr io.Writer) *cobra.Command {
 				return emitVersion(format, versionCount > 1)
 			}
 			if len(args) == 1 {
-				return cmdHop(args[0], rootIdentityFile, rootOutput)
+				return cmdHop(args[0], rootIdentityFile, rootOutput, rootWaitTimeout)
 			}
 			if len(args) > 1 {
 				return cliError{code: 2, msg: "unknown command or too many arguments: " + strings.Join(args, " ")}
@@ -151,6 +162,7 @@ func newRootCommand(stdout, stderr io.Writer) *cobra.Command {
 	root.Flags().CountVarP(&versionCount, "verbose-version", "v", "print version; repeat for commit and date")
 	root.Flags().StringVarP(&rootOutput, "output", "o", "text", "output format for <host>: text or json")
 	root.Flags().StringVar(&rootIdentityFile, "identity-file", "", "SSH identity file to pass to bastion-session for <host>")
+	root.Flags().StringVar(&rootWaitTimeout, "wait-timeout", defaultWaitTime, "how long to wait for a new Bastion session to become ACTIVE")
 	_ = root.RegisterFlagCompletionFunc("output", outputFormatCompletion)
 	_ = root.RegisterFlagCompletionFunc("identity-file", fileCompletion)
 
@@ -444,17 +456,26 @@ func cmdCheck(args []string) error {
 	return nil
 }
 
-func cmdHop(host, identityFile, format string) error {
+func cmdHop(host, identityFile, format, waitTimeout string) error {
 	host = strings.TrimSpace(host)
 	if host == "" {
 		return cliError{code: 2, msg: "host is required"}
 	}
+	if format != "" && format != "text" && format != "json" {
+		return cliError{code: 2, msg: "output must be json or text"}
+	}
+	hopProgress(format, "checking OCI auth...")
 	auth := runJSON("oci-context", "auth", "ensure", "--output", "json")
 	ensureArgs := []string{"ensure", host, "-o", "json"}
 	if identityFile != "" {
 		ensureArgs = append(ensureArgs, "--identity-file", identityFile)
 	}
+	if waitTimeout != "" {
+		ensureArgs = append(ensureArgs, "--wait-timeout", waitTimeout)
+	}
+	hopProgress(format, "ensuring Bastion session for %s (timeout %s)...", host, effectiveWaitTimeout(waitTimeout))
 	ensured := runJSON("bastion-session", ensureArgs...)
+	hopProgress(format, "refreshing SSH config for %s...", host)
 	sshConfig := runJSON("bastion-session", "ssh-config", "show", host, "-o", "json")
 	ok := auth.OK && ensured.OK && sshConfig.OK
 	out := map[string]any{
@@ -478,13 +499,25 @@ func cmdHop(host, identityFile, format string) error {
 		} else if err := emit(out); err != nil {
 			return err
 		}
-	default:
-		return cliError{code: 2, msg: "output must be json or text"}
 	}
 	if !ok {
 		return cliError{code: 1, msg: "hop failed"}
 	}
 	return nil
+}
+
+func hopProgress(format, message string, args ...any) {
+	if format != "" && format != "text" {
+		return
+	}
+	fmt.Fprintf(os.Stderr, message+"\n", args...)
+}
+
+func effectiveWaitTimeout(waitTimeout string) string {
+	if strings.TrimSpace(waitTimeout) == "" {
+		return "default"
+	}
+	return waitTimeout
 }
 
 func doctorPayload(host string) map[string]any {
