@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"os/exec"
@@ -99,10 +100,30 @@ func TestHermeticCLIContract(t *testing.T) {
 	if got, want := strings.TrimSpace(ready.stdout), "ready  my-vps-01  10.0.1.25  via my-bastion"; got != want {
 		t.Fatalf("unexpected compact ready line\nwant: %q\n got: %q", want, got)
 	}
+	for _, want := range []string{
+		"checking OCI auth...",
+		"ensuring Bastion session for my-vps-01 (timeout 2m)...",
+		"refreshing SSH config for my-vps-01...",
+	} {
+		if !strings.Contains(ready.stderr, want) {
+			t.Fatalf("ready stderr missing %q\nstderr:\n%s", want, ready.stderr)
+		}
+	}
+
+	readyShort := runCommandForTest(t, append(helper, "--wait-timeout", "15s", "my-vps-01"), env)
+	if readyShort.code != 0 {
+		t.Fatalf("hop host with wait timeout failed with %d\nstdout:\n%s\nstderr:\n%s", readyShort.code, readyShort.stdout, readyShort.stderr)
+	}
+	if !strings.Contains(readyShort.stderr, "ensuring Bastion session for my-vps-01 (timeout 15s)...") {
+		t.Fatalf("custom timeout missing from progress\nstderr:\n%s", readyShort.stderr)
+	}
 
 	readyJSON := runCommandForTest(t, append(helper, "-o", "json", "my-vps-01"), env)
 	if readyJSON.code != 0 {
 		t.Fatalf("hop host json failed with %d\nstdout:\n%s\nstderr:\n%s", readyJSON.code, readyJSON.stdout, readyJSON.stderr)
+	}
+	if strings.TrimSpace(readyJSON.stderr) != "" {
+		t.Fatalf("json output should not include progress on stderr:\n%s", readyJSON.stderr)
 	}
 	readyPayload := decodeObject(t, readyJSON.stdout)
 	for _, key := range []string{"ok", "host", "auth", "ensure", "ssh_config"} {
@@ -202,7 +223,7 @@ case "$*" in
   "target show my-vps-01 -o json")
     printf '{"name":"my-vps-01","instance_id":"ocid1.instance","private_ip":"10.0.1.25"}\n'
     ;;
-  "ensure my-vps-01 -o json")
+  "ensure my-vps-01 -o json"|"ensure my-vps-01 -o json --wait-timeout 2m"|"ensure my-vps-01 -o json --wait-timeout 15s")
     printf '{"ready":true,"ssh_host":"my-vps-01","connect_command":"ssh my-vps-01","target_private_ip":"10.0.1.25"}\n'
     ;;
   "explain my-vps-01 -o json")
@@ -250,12 +271,16 @@ func runCommandForTest(t *testing.T, args []string, env []string) commandRun {
 	t.Helper()
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Env = env
-	stdout, err := cmd.Output()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
 	if err == nil {
-		return commandRun{stdout: string(stdout)}
+		return commandRun{stdout: stdout.String(), stderr: stderr.String()}
 	}
 	if exitErr, ok := err.(*exec.ExitError); ok {
-		return commandRun{stdout: string(stdout), stderr: string(exitErr.Stderr), code: exitErr.ExitCode()}
+		return commandRun{stdout: stdout.String(), stderr: stderr.String(), code: exitErr.ExitCode()}
 	}
 	t.Fatalf("command failed before exit: %v", err)
 	return commandRun{}
