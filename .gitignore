@@ -1,0 +1,8 @@
+# Go build artifacts
+/oci-hop
+*.test
+coverage.out
+
+# devenv / direnv
+.devenv/
+.direnv/
