@@ -1,7 +1,7 @@
 { pkgs, ... }:
 {
-  # go.mod: go 1.24.0 (minimum). nixpkgs-unstable no longer ships go_1_24 and
-  # devenv's Go tooling (gopls etc.) needs >= 1.26, so track pkgs.go.
+  # go.mod: go 1.24.0 (minimum). Track pkgs.go for whatever version nixos-26.05
+  # ships, keeping devenv's Go tooling (gopls etc.) in sync with the compiler.
   languages.go = {
     enable = true;
     package = pkgs.go;
