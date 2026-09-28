@@ -3,6 +3,8 @@
 Prepare SSH access to OCI compute hosts through OCI Bastion without making the
 operator think about sessions, OCIDs, or temporary bastion hostnames.
 
+> **Disclaimer:** This is an independent, unofficial project. It is not affiliated with, endorsed by, or supported by Oracle Corporation.
+
 ![OCI Bastion Hopper terminal demo](docs/assets/oci-hop-demo.gif)
 
 `hop` is the small front-door CLI for the OCI SSH workflow:

@@ -4,7 +4,7 @@
   "description": "Agent workflows for preparing SSH access to OCI compute hosts through OCI Bastion sessions.",
   "author": {
     "name": "Adrian Ross",
-    "email": "adrian@example.com",
+    "email": "contact-adrian+on-github@slmail.me",
     "url": "https://github.com/adrianmross"
   },
   "homepage": "https://github.com/adrianmross",
@@ -21,7 +21,7 @@
   "interface": {
     "displayName": "OCI Bastion Hopper",
     "shortDescription": "Prepare SSH routes to OCI hosts through Bastion.",
-    "longDescription": "Portable agent workflows and a Go CLI for oci-context and bastion-session. This Codex plugin packages the generic skills so agents can track, ensure, diagnose, and prepare SSH access to OCI compute hosts through OCI Bastion managed SSH sessions.",
+    "longDescription": "Portable agent workflows and a Go CLI for oci-context and bastion-session. This unofficial plugin packages the generic skills so agents can track, ensure, diagnose, and prepare SSH access to OCI compute hosts through OCI Bastion managed SSH sessions.",
     "developerName": "Adrian Ross",
     "category": "Productivity",
     "capabilities": [
